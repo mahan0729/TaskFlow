@@ -1,7 +1,5 @@
 /**
- * RegisterPage — new account creation form.
- * Validates that passwords match client-side before submitting.
- * On success navigates to /dashboard.
+ * RegisterPage — same blue gradient as LoginPage for visual consistency.
  */
 import { useState, type FormEvent } from 'react';
 import { Link, useNavigate, Navigate } from 'react-router-dom';
@@ -10,124 +8,110 @@ import { useAuth } from '../context/AuthContext';
 export default function RegisterPage() {
   const { user, register, loading, error, clearError } = useAuth();
   const navigate = useNavigate();
-
-  const [email, setEmail] = useState('');
+  const [email, setEmail]       = useState('');
   const [password, setPassword] = useState('');
-  const [confirm, setConfirm] = useState('');
+  const [confirm, setConfirm]   = useState('');
   const [matchError, setMatchError] = useState('');
 
-  // Already logged in — skip registration
   if (user) return <Navigate to="/dashboard" replace />;
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
-
-    // Client-side password confirmation check
-    if (password !== confirm) {
-      setMatchError('Passwords do not match.');
-      return;
-    }
+    if (password !== confirm) { setMatchError('Passwords do not match.'); return; }
     setMatchError('');
-
     try {
       await register(email, password);
       navigate('/dashboard');
-    } catch {
-      // Error displayed via AuthContext
-    }
+    } catch { /* error shown via AuthContext */ }
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
-      <div className="w-full max-w-md">
+    <div className="min-h-screen bg-gradient-to-br from-blue-900 via-blue-700 to-indigo-800 flex items-center justify-center px-4 relative overflow-hidden">
 
-        {/* Brand */}
+      {/* Decorative blurred circles */}
+      <div className="absolute top-[-10%] right-[-5%] w-96 h-96 bg-blue-400/20 rounded-full blur-3xl" />
+      <div className="absolute bottom-[-10%] left-[-10%] w-80 h-80 bg-violet-500/20 rounded-full blur-3xl" />
+
+      <div className="w-full max-w-md relative z-10">
+
+        {/* Brand header */}
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-primary-600">TaskFlow</h1>
-          <p className="mt-2 text-sm text-gray-500">Create your free account</p>
+          <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-white/20 backdrop-blur-sm mb-4 shadow-glass">
+            <span className="text-2xl font-black text-white">TF</span>
+          </div>
+          <h1 className="text-3xl font-black text-white tracking-tight">TaskFlow</h1>
+          <p className="mt-1 text-blue-200 text-sm">Create your free account</p>
         </div>
 
-        <div className="card">
-          {/* Server-side error banner */}
+        <div className="card-glass">
+
           {error && (
-            <div className="mb-4 p-3 rounded-lg bg-red-50 border border-red-200 text-sm text-red-700">
+            <div className="mb-5 p-3 rounded-xl bg-red-500/20 border border-red-300/30 text-sm text-red-100">
               {error}
             </div>
           )}
 
           <form onSubmit={handleSubmit} className="space-y-4">
-            {/* Email */}
             <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
-                Email
-              </label>
+              <label className="block text-sm font-medium text-blue-100 mb-1.5">Email</label>
               <input
-                id="email"
                 type="email"
                 autoComplete="email"
                 required
-                className="input"
+                className="input-glass"
                 value={email}
-                onChange={(e) => { setEmail(e.target.value); clearError(); }}
+                onChange={e => { setEmail(e.target.value); clearError(); }}
                 placeholder="you@example.com"
               />
             </div>
 
-            {/* Password */}
             <div>
-              <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
-                Password
-              </label>
+              <label className="block text-sm font-medium text-blue-100 mb-1.5">Password</label>
               <input
-                id="password"
                 type="password"
                 autoComplete="new-password"
                 required
                 minLength={8}
-                className="input"
+                className="input-glass"
                 value={password}
-                onChange={(e) => { setPassword(e.target.value); clearError(); setMatchError(''); }}
+                onChange={e => { setPassword(e.target.value); clearError(); setMatchError(''); }}
                 placeholder="Minimum 8 characters"
               />
             </div>
 
-            {/* Confirm password */}
             <div>
-              <label htmlFor="confirm" className="block text-sm font-medium text-gray-700 mb-1">
-                Confirm password
-              </label>
+              <label className="block text-sm font-medium text-blue-100 mb-1.5">Confirm password</label>
               <input
-                id="confirm"
                 type="password"
                 autoComplete="new-password"
                 required
-                className={`input ${matchError ? 'border-red-400' : ''}`}
+                className={`input-glass ${matchError ? 'border-red-400/60' : ''}`}
                 value={confirm}
-                onChange={(e) => { setConfirm(e.target.value); setMatchError(''); }}
+                onChange={e => { setConfirm(e.target.value); setMatchError(''); }}
                 placeholder="••••••••"
               />
-              {/* Client-side match error */}
-              {matchError && (
-                <p className="mt-1 text-xs text-red-600">{matchError}</p>
-              )}
+              {matchError && <p className="mt-1 text-xs text-red-300">{matchError}</p>}
             </div>
 
-            {/* Free plan notice */}
-            <p className="text-xs text-gray-500">
-              Free accounts include up to 10 tasks. Upgrade to Pro for unlimited.
+            {/* Free plan note */}
+            <p className="text-xs text-blue-300 text-center">
+              Free accounts include up to 10 tasks · Upgrade to Pro anytime
             </p>
 
-            <button type="submit" disabled={loading} className="btn-primary w-full mt-2">
-              {loading ? 'Creating account…' : 'Create account'}
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full mt-2 py-3 rounded-xl bg-white text-primary-700 font-bold text-sm
+                         hover:bg-blue-50 active:scale-95 shadow-lg transition-all duration-150
+                         disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {loading ? 'Creating account…' : 'Create free account'}
             </button>
           </form>
 
-          {/* Login link */}
-          <p className="mt-4 text-center text-sm text-gray-500">
+          <p className="mt-5 text-center text-sm text-blue-200">
             Already have an account?{' '}
-            <Link to="/login" className="text-primary-600 font-medium hover:underline">
-              Sign in
-            </Link>
+            <Link to="/login" className="text-white font-semibold hover:underline">Sign in</Link>
           </p>
         </div>
       </div>

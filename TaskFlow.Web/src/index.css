@@ -1,52 +1,97 @@
-/* Tailwind base layers — order matters */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* Global base resets on top of Tailwind's preflight */
 @layer base {
   body {
-    @apply bg-gray-50 text-gray-900 antialiased;
+    @apply antialiased;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
   }
 
-  /* Consistent focus ring for accessibility */
   *:focus-visible {
-    @apply outline-none ring-2 ring-primary-500 ring-offset-2;
+    @apply outline-none ring-2 ring-blue-500 ring-offset-2;
   }
 }
 
-/* Reusable component classes — keeps JSX clean */
 @layer components {
-  /* Primary action button */
+  /* ── Buttons ─────────────────────────────────────────────────── */
+
   .btn-primary {
-    @apply inline-flex items-center justify-center px-4 py-2 rounded-lg
-           bg-primary-600 text-white font-medium text-sm
-           hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed
-           transition-colors duration-150;
+    @apply inline-flex items-center justify-center px-5 py-2.5 rounded-xl
+           bg-blue-600 text-white font-semibold text-sm
+           hover:bg-blue-700 active:scale-95
+           shadow-md hover:shadow-lg
+           disabled:opacity-50 disabled:cursor-not-allowed
+           transition-all duration-150;
   }
 
-  /* Secondary / outline button */
   .btn-secondary {
-    @apply inline-flex items-center justify-center px-4 py-2 rounded-lg
-           border border-gray-300 bg-white text-gray-700 font-medium text-sm
-           hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed
-           transition-colors duration-150;
+    @apply inline-flex items-center justify-center px-5 py-2.5 rounded-xl
+           border border-gray-200 bg-white text-gray-700 font-semibold text-sm
+           hover:bg-gray-50 active:scale-95
+           shadow-sm hover:shadow-md
+           disabled:opacity-50 disabled:cursor-not-allowed
+           transition-all duration-150;
   }
 
-  /* Standard form input */
+  /* Ghost button — used inside the dark sidebar */
+  .btn-ghost {
+    @apply inline-flex items-center justify-center px-4 py-2 rounded-xl
+           text-blue-200 font-medium text-sm
+           hover:bg-white/10 hover:text-white
+           transition-all duration-150;
+  }
+
+  /* ── Inputs ──────────────────────────────────────────────────── */
+
   .input {
-    @apply block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm
-           placeholder-gray-400 shadow-sm
-           focus:border-primary-500 focus:ring-primary-500;
+    @apply block w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm
+           bg-white text-gray-900 placeholder-gray-400
+           shadow-sm transition-all duration-150
+           focus:border-blue-400 focus:ring-2 focus:ring-blue-100
+           focus:outline-none;
   }
 
-  /* Card container */
+  /* Input on a dark/glass background (auth pages) */
+  .input-glass {
+    @apply block w-full rounded-xl px-4 py-3 text-sm
+           bg-white/10 text-white placeholder-blue-200
+           border border-white/20
+           focus:border-white/60 focus:ring-2 focus:ring-white/20
+           focus:outline-none backdrop-blur-sm transition-all duration-150;
+  }
+
+  /* ── Cards ───────────────────────────────────────────────────── */
+
+  /* Standard white card — custom shadow applied via plain CSS, not @apply */
   .card {
-    @apply bg-white rounded-xl shadow-sm border border-gray-200 p-6;
+    @apply bg-white rounded-2xl border border-gray-100 p-6;
+    box-shadow: 0 4px 24px rgba(30, 58, 138, 0.08);
   }
 
-  /* Pill badge */
+  /* Frosted-glass card for auth pages */
+  .card-glass {
+    @apply rounded-2xl border border-white/20 p-8 backdrop-blur-md;
+    background: rgba(255, 255, 255, 0.12);
+    box-shadow: 0 8px 32px rgba(30, 58, 138, 0.12);
+  }
+
+  /* ── Badges ──────────────────────────────────────────────────── */
+
   .badge {
-    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium;
+    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold;
+  }
+
+  /* ── Sidebar nav link ────────────────────────────────────────── */
+
+  .nav-link {
+    @apply flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium
+           text-blue-200 hover:bg-white/10 hover:text-white
+           transition-all duration-150;
+  }
+
+  .nav-link-active {
+    @apply text-white shadow-sm;
+    background: rgba(255, 255, 255, 0.15);
   }
 }
