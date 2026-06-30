@@ -1,0 +1,211 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# TaskFlow — Azure DevOps CI/CD Pipeline
+#
+# Stages:
+#   1. Build  — compiles the .NET 10 API and builds the React 19 frontend
+#   2. Deploy — publishes both artifacts to Azure App Services
+#
+# Required pipeline variables (set in Azure DevOps → Pipelines → Variables):
+#   AZURE_SUBSCRIPTION      — name of the Azure Resource Manager service connection
+#   API_APP_SERVICE_NAME    — name of the Azure App Service for the .NET API
+#   WEB_APP_SERVICE_NAME    — name of the Azure App Service for the React frontend
+#   JWT_SECRET              — strong random string (32+ chars) for JWT signing
+#   STRIPE_SECRET_KEY       — Stripe secret key (sk_live_xxx or sk_test_xxx)
+#   STRIPE_WEBHOOK_SECRET   — Stripe webhook signing secret (whsec_xxx)
+#   STRIPE_PRO_PRICE_ID     — Stripe price ID for the Pro plan (price_xxx)
+#   SQL_CONNECTION_STRING   — Azure SQL connection string
+# ─────────────────────────────────────────────────────────────────────────────
+
+# Trigger on every push to main
+trigger:
+  branches:
+    include:
+      - main
+
+# No PR builds by default — enable when ready for code review workflow
+pr: none
+
+# Use the latest Ubuntu agent (faster and free on Azure DevOps)
+pool:
+  vmImage: 'ubuntu-latest'
+
+# ── Shared variables ──────────────────────────────────────────────────────────
+variables:
+  # .NET
+  dotnetVersion: '10.0.x'
+  buildConfiguration: 'Release'
+  apiProject: 'TaskFlow.API/TaskFlow.API.csproj'
+
+  # React
+  webWorkingDir: 'TaskFlow.Web'
+
+  # Artifact names — referenced in the Deploy stage
+  apiArtifactName: 'taskflow-api'
+  webArtifactName: 'taskflow-web'
+
+# ═════════════════════════════════════════════════════════════════════════════
+# STAGE 1 — Build
+# ═════════════════════════════════════════════════════════════════════════════
+stages:
+  - stage: Build
+    displayName: 'Build'
+    jobs:
+
+      # ── Job 1: Build .NET 10 API ──────────────────────────────────────────
+      - job: BuildAPI
+        displayName: 'Build .NET 10 API'
+        steps:
+
+          # Install the target .NET SDK version
+          - task: UseDotNet@2
+            displayName: 'Install .NET $(dotnetVersion)'
+            inputs:
+              packageType: 'sdk'
+              version: '$(dotnetVersion)'
+
+          # Restore NuGet packages for the entire solution
+          - task: DotNetCoreCLI@2
+            displayName: 'Restore NuGet packages'
+            inputs:
+              command: 'restore'
+              projects: '**/*.csproj'
+
+          # Compile in Release mode — surfaces any build errors early
+          - task: DotNetCoreCLI@2
+            displayName: 'Build solution'
+            inputs:
+              command: 'build'
+              projects: '**/*.csproj'
+              arguments: '--configuration $(buildConfiguration) --no-restore'
+
+          # Publish the API to a self-contained folder ready for deployment
+          - task: DotNetCoreCLI@2
+            displayName: 'Publish API'
+            inputs:
+              command: 'publish'
+              publishWebProjects: false
+              projects: '$(apiProject)'
+              arguments: '--configuration $(buildConfiguration) --no-build --output $(Build.ArtifactStagingDirectory)/api'
+              zipAfterPublish: true
+
+          # Upload the published API zip as a pipeline artifact
+          - task: PublishPipelineArtifact@1
+            displayName: 'Upload API artifact'
+            inputs:
+              targetPath: '$(Build.ArtifactStagingDirectory)/api'
+              artifact: '$(apiArtifactName)'
+
+      # ── Job 2: Build React 19 Frontend ───────────────────────────────────
+      - job: BuildWeb
+        displayName: 'Build React 19 Frontend'
+        steps:
+
+          # Use Node LTS for the Vite build
+          - task: NodeTool@0
+            displayName: 'Install Node.js LTS'
+            inputs:
+              versionSpec: '20.x'
+
+          # Install npm dependencies
+          - script: npm ci
+            displayName: 'npm ci'
+            workingDirectory: '$(webWorkingDir)'
+
+          # Type-check and build for production
+          - script: npm run build
+            displayName: 'npm run build'
+            workingDirectory: '$(webWorkingDir)'
+            env:
+              # Point the frontend at the deployed API URL
+              # Set VITE_API_URL in Azure DevOps pipeline variables
+              VITE_API_URL: $(VITE_API_URL)
+
+          # Upload the Vite dist/ folder as a pipeline artifact
+          - task: PublishPipelineArtifact@1
+            displayName: 'Upload Web artifact'
+            inputs:
+              targetPath: '$(webWorkingDir)/dist'
+              artifact: '$(webArtifactName)'
+
+  # ═══════════════════════════════════════════════════════════════════════════
+  # STAGE 2 — Deploy
+  # ═══════════════════════════════════════════════════════════════════════════
+  - stage: Deploy
+    displayName: 'Deploy to Azure'
+    dependsOn: Build
+    # Only deploy from the main branch — not from feature branches
+    condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
+
+    jobs:
+
+      # ── Job 1: Deploy API to Azure App Service ────────────────────────────
+      - deployment: DeployAPI
+        displayName: 'Deploy API → Azure App Service'
+        environment: 'production'
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+
+                # Download the API artifact from the Build stage
+                - task: DownloadPipelineArtifact@2
+                  displayName: 'Download API artifact'
+                  inputs:
+                    artifactName: '$(apiArtifactName)'
+                    targetPath: '$(Pipeline.Workspace)/api'
+
+                # Deploy the zip to the Azure App Service
+                - task: AzureWebApp@1
+                  displayName: 'Deploy to Azure App Service (API)'
+                  inputs:
+                    azureSubscription: '$(AZURE_SUBSCRIPTION)'
+                    appType: 'webAppLinux'
+                    appName: '$(API_APP_SERVICE_NAME)'
+                    package: '$(Pipeline.Workspace)/api/**/*.zip'
+                    # Inject production secrets as App Service environment variables
+                    # These override appsettings.json without exposing secrets in code
+                    appSettings: >
+                      -ConnectionStrings__DefaultConnection "$(SQL_CONNECTION_STRING)"
+                      -Jwt__Secret "$(JWT_SECRET)"
+                      -Jwt__Issuer "TaskFlowAPI"
+                      -Jwt__Audience "TaskFlowClient"
+                      -Stripe__SecretKey "$(STRIPE_SECRET_KEY)"
+                      -Stripe__WebhookSecret "$(STRIPE_WEBHOOK_SECRET)"
+                      -Stripe__ProPriceId "$(STRIPE_PRO_PRICE_ID)"
+                      -AllowedOrigins__0 "https://$(WEB_APP_SERVICE_NAME).azurewebsites.net"
+
+      # ── Job 2: Deploy React frontend to Azure App Service ─────────────────
+      - deployment: DeployWeb
+        displayName: 'Deploy React → Azure App Service (Web)'
+        dependsOn: DeployAPI
+        environment: 'production'
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+
+                # Download the React dist artifact
+                - task: DownloadPipelineArtifact@2
+                  displayName: 'Download Web artifact'
+                  inputs:
+                    artifactName: '$(webArtifactName)'
+                    targetPath: '$(Pipeline.Workspace)/web'
+
+                # The React SPA needs a simple Node server or static hosting.
+                # We wrap it in a minimal Express server for Azure App Service.
+                - script: |
+                    echo '{"name":"taskflow-web","version":"1.0.0","scripts":{"start":"node server.js"},"dependencies":{"express":"^4.18.0"}}' > $(Pipeline.Workspace)/web/package.json
+                    echo 'const express=require("express"),path=require("path"),app=express();app.use(express.static(__dirname));app.get("*",(_,res)=>res.sendFile(path.join(__dirname,"index.html")));app.listen(process.env.PORT||8080);' > $(Pipeline.Workspace)/web/server.js
+                    cd $(Pipeline.Workspace)/web && npm install --production
+                  displayName: 'Add Express static server for SPA routing'
+
+                # Deploy the wrapped SPA to a separate App Service
+                - task: AzureWebApp@1
+                  displayName: 'Deploy to Azure App Service (Web)'
+                  inputs:
+                    azureSubscription: '$(AZURE_SUBSCRIPTION)'
+                    appType: 'webAppLinux'
+                    appName: '$(WEB_APP_SERVICE_NAME)'
+                    package: '$(Pipeline.Workspace)/web'
+                    runtimeStack: 'NODE|20-lts'
+                    startUpCommand: 'node server.js'
