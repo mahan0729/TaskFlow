@@ -162,17 +162,25 @@ stages:
                     appType: 'webAppLinux'
                     appName: '$(API_APP_SERVICE_NAME)'
                     package: '$(Pipeline.Workspace)/api/**/*.zip'
-                    # Inject production secrets as App Service environment variables
-                    # These override appsettings.json without exposing secrets in code
-                    appSettings: >
-                      -ConnectionStrings__DefaultConnection "$(SQL_CONNECTION_STRING)"
-                      -Jwt__Secret "$(JWT_SECRET)"
-                      -Jwt__Issuer "TaskFlowAPI"
-                      -Jwt__Audience "TaskFlowClient"
-                      -Stripe__SecretKey "$(STRIPE_SECRET_KEY)"
-                      -Stripe__WebhookSecret "$(STRIPE_WEBHOOK_SECRET)"
-                      -Stripe__ProPriceId "$(STRIPE_PRO_PRICE_ID)"
-                      -AllowedOrigins__0 "https://$(WEB_APP_SERVICE_NAME).azurewebsites.net"
+
+                # Set app settings separately — AzureAppServiceSettings@1 uses JSON
+                # format which safely handles semicolons and = signs in connection strings
+                - task: AzureAppServiceSettings@1
+                  displayName: 'Configure API app settings'
+                  inputs:
+                    azureSubscription: '$(AZURE_SUBSCRIPTION)'
+                    appName: '$(API_APP_SERVICE_NAME)'
+                    appSettings: |
+                      [
+                        {"name": "ConnectionStrings__DefaultConnection", "value": "$(SQL_CONNECTION_STRING)", "slotSetting": false},
+                        {"name": "Jwt__Secret", "value": "$(JWT_SECRET)", "slotSetting": false},
+                        {"name": "Jwt__Issuer", "value": "TaskFlowAPI", "slotSetting": false},
+                        {"name": "Jwt__Audience", "value": "TaskFlowClient", "slotSetting": false},
+                        {"name": "Stripe__SecretKey", "value": "$(STRIPE_SECRET_KEY)", "slotSetting": false},
+                        {"name": "Stripe__WebhookSecret", "value": "$(STRIPE_WEBHOOK_SECRET)", "slotSetting": false},
+                        {"name": "Stripe__ProPriceId", "value": "$(STRIPE_PRO_PRICE_ID)", "slotSetting": false},
+                        {"name": "AllowedOrigins__0", "value": "https://$(WEB_APP_SERVICE_NAME).azurewebsites.net", "slotSetting": false}
+                      ]
 
       # ── Job 2: Deploy React frontend to Azure App Service ─────────────────
       - deployment: DeployWeb
