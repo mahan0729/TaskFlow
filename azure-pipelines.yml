@@ -101,7 +101,7 @@ stages:
         steps:
 
           # Use Node LTS for the Vite build
-          - task: NodeTool@0
+          - task: UseNodeV1@1
             displayName: 'Install Node.js LTS'
             inputs:
               versionSpec: '22.x'
