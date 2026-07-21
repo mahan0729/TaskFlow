@@ -104,7 +104,7 @@ stages:
           - task: NodeTool@1
             displayName: 'Install Node.js LTS'
             inputs:
-              versionSpec: '22.x'
+              versionSpec: '24.x'
 
           # Install npm dependencies
           - script: npm ci
@@ -215,5 +215,5 @@ stages:
                     appType: 'webAppLinux'
                     appName: '$(WEB_APP_SERVICE_NAME)'
                     package: '$(Pipeline.Workspace)/web'
-                    runtimeStack: 'NODE|22-lts'
+                    runtimeStack: 'NODE|24-lts'
                     startUpCommand: 'node server.js'
