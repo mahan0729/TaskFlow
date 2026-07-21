@@ -101,14 +101,14 @@ stages:
         steps:
 
           # Use Node LTS for the Vite build
-          - task: NodeTool@1
+          - task: NodeTool@0
             displayName: 'Install Node.js LTS'
             inputs:
-              versionSpec: '24.x'
+              versionSpec: '22.x'
 
           # Install npm dependencies
-          - script: npm install
-            displayName: 'npm install'
+          - script: npm ci
+            displayName: 'npm ci'
             workingDirectory: '$(webWorkingDir)'
 
           # Type-check and build for production
@@ -215,5 +215,5 @@ stages:
                     appType: 'webAppLinux'
                     appName: '$(WEB_APP_SERVICE_NAME)'
                     package: '$(Pipeline.Workspace)/web'
-                    runtimeStack: 'NODE|24-lts'
+                    runtimeStack: 'NODE|22-lts'
                     startUpCommand: 'node server.js'
