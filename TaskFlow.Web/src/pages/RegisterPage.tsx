@@ -4,6 +4,7 @@
 import { useState, type FormEvent } from 'react';
 import { Link, useNavigate, Navigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { PasswordInput } from '../components/PasswordInput';
 
 export default function RegisterPage() {
   const { user, register, loading, error, clearError } = useAuth();
@@ -67,28 +68,24 @@ export default function RegisterPage() {
 
             <div>
               <label className="block text-sm font-medium text-blue-100 mb-1.5">Password</label>
-              <input
-                type="password"
+              <PasswordInput
                 autoComplete="new-password"
                 required
                 minLength={8}
-                className="input-glass"
                 value={password}
-                onChange={e => { setPassword(e.target.value); clearError(); setMatchError(''); }}
+                onChange={v => { setPassword(v); clearError(); setMatchError(''); }}
                 placeholder="Minimum 8 characters"
               />
             </div>
 
             <div>
               <label className="block text-sm font-medium text-blue-100 mb-1.5">Confirm password</label>
-              <input
-                type="password"
+              <PasswordInput
                 autoComplete="new-password"
                 required
-                className={`input-glass ${matchError ? 'border-red-400/60' : ''}`}
                 value={confirm}
-                onChange={e => { setConfirm(e.target.value); setMatchError(''); }}
-                placeholder="••••••••"
+                onChange={v => { setConfirm(v); setMatchError(''); }}
+                hasError={!!matchError}
               />
               {matchError && <p className="mt-1 text-xs text-red-300">{matchError}</p>}
             </div>

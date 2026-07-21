@@ -4,6 +4,7 @@
 import { useState, type FormEvent } from 'react';
 import { Link, useNavigate, Navigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { PasswordInput } from '../components/PasswordInput';
 
 export default function LoginPage() {
   const { user, login, loading, error, clearError } = useAuth();
@@ -66,14 +67,11 @@ export default function LoginPage() {
 
             <div>
               <label className="block text-sm font-medium text-blue-100 mb-1.5">Password</label>
-              <input
-                type="password"
+              <PasswordInput
                 autoComplete="current-password"
                 required
-                className="input-glass"
                 value={password}
-                onChange={e => { setPassword(e.target.value); clearError(); }}
-                placeholder="••••••••"
+                onChange={v => { setPassword(v); clearError(); }}
               />
             </div>
 

@@ -4,6 +4,7 @@
  */
 import { useEffect, useState } from 'react';
 import { getAdminStats, getAdminUsers, updateUserRole, updateUserPlan, deleteUser, createUser } from '../services/admin.service';
+import { PasswordInput } from '../components/PasswordInput';
 import type { AdminStats, AdminUser } from '../types';
 
 const EMPTY_FORM = { email: '', password: '', role: 'User' as 'User' | 'Admin' };
@@ -124,12 +125,11 @@ export default function AdminPage() {
               </div>
               <div>
                 <label className="block text-xs font-medium text-gray-600 mb-1">Password</label>
-                <input
-                  type="password"
+                <PasswordInput
                   required
                   minLength={8}
                   value={form.password}
-                  onChange={e => setForm(f => ({ ...f, password: e.target.value }))}
+                  onChange={v => setForm(f => ({ ...f, password: v }))}
                   className="input w-full"
                   placeholder="Min 8 characters"
                 />
