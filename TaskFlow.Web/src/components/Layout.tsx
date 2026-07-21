@@ -119,18 +119,17 @@ export default function Layout() {
             Sign out
           </button>
 
-          {/* Copyright */}
-          <p className="mt-3 px-4 text-xs text-slate-600 select-none">
-            &copy; {new Date().getFullYear()} Matt Mahan
-          </p>
         </div>
       </aside>
 
       {/* ── Main content area ─────────────────────────────────────── */}
-      <main className="flex-1 overflow-y-auto">
-        <div className="max-w-6xl mx-auto px-6 lg:px-10 py-8">
+      <main className="flex-1 overflow-y-auto flex flex-col">
+        <div className="flex-1 max-w-6xl w-full mx-auto px-6 lg:px-10 py-8">
           <Outlet />
         </div>
+        <footer className="text-center py-4 text-xs text-gray-400 select-none">
+          &copy; {new Date().getFullYear()} Matt Mahan
+        </footer>
       </main>
     </div>
   );
