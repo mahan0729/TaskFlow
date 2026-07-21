@@ -127,7 +127,7 @@ export default function Layout() {
         <div className="flex-1 max-w-6xl w-full mx-auto px-6 lg:px-10 py-8">
           <Outlet />
         </div>
-        <footer className="text-center py-4 text-xs text-gray-400 select-none">
+        <footer className="text-center py-4 text-sm text-gray-500 font-medium select-none">
           &copy; {new Date().getFullYear()} Matt Mahan
         </footer>
       </main>
