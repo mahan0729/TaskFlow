@@ -187,11 +187,14 @@ export default function AdminPage() {
             <table className="w-full text-sm">
               <thead className="bg-gray-50 border-b border-gray-200">
                 <tr>
-                  {['Email', 'Role', 'Plan', 'Subscription ID', 'Projects', 'Tasks', 'Joined', 'Actions'].map(h => (
+                  {['Email', 'Role', 'Plan', 'Projects', 'Tasks', 'Joined'].map(h => (
                     <th key={h} className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">
                       {h}
                     </th>
                   ))}
+                  <th className="sticky right-0 bg-gray-50 border-l border-gray-200 text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                    Actions
+                  </th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
@@ -206,18 +209,14 @@ export default function AdminPage() {
                       </span>
                     </td>
 
-                    {/* Plan badge */}
+                    {/* Plan badge — hover to see Stripe subscription ID */}
                     <td className="px-4 py-3">
-                      <span className={`badge ${user.plan === 'Pro' ? 'bg-primary-100 text-primary-700' : 'bg-gray-100 text-gray-600'}`}>
+                      <span
+                        className={`badge ${user.plan === 'Pro' ? 'bg-primary-100 text-primary-700' : 'bg-gray-100 text-gray-600'}`}
+                        title={user.stripeSubscriptionId ?? undefined}
+                      >
                         {user.plan}
                       </span>
-                    </td>
-
-                    {/* Subscription ID */}
-                    <td className="px-4 py-3 text-gray-400 font-mono text-xs">
-                      {user.stripeSubscriptionId
-                        ? <span title={user.stripeSubscriptionId}>{user.stripeSubscriptionId.slice(0, 14)}…</span>
-                        : <span className="text-gray-300">—</span>}
                     </td>
 
                     <td className="px-4 py-3 text-gray-600">{user.projectCount}</td>
@@ -226,18 +225,18 @@ export default function AdminPage() {
                       {new Date(user.createdAt).toLocaleDateString()}
                     </td>
 
-                    {/* Actions */}
-                    <td className="px-4 py-3">
+                    {/* Sticky Actions */}
+                    <td className="sticky right-0 bg-white border-l border-gray-100 px-4 py-3">
                       <div className="flex gap-3">
                         <button
                           onClick={() => handleRoleToggle(user)}
-                          className="text-xs text-primary-600 hover:underline"
+                          className="text-xs text-primary-600 hover:underline whitespace-nowrap"
                         >
                           {user.role === 'Admin' ? 'Remove Admin' : 'Make Admin'}
                         </button>
                         <button
                           onClick={() => handlePlanToggle(user)}
-                          className="text-xs text-emerald-600 hover:underline"
+                          className="text-xs text-emerald-600 hover:underline whitespace-nowrap"
                         >
                           {user.plan === 'Pro' ? 'Set Free' : 'Set Pro'}
                         </button>
