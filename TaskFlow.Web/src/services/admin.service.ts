@@ -19,9 +19,19 @@ export async function getAdminUsers(page = 1, pageSize = 20): Promise<AdminUser[
   return data;
 }
 
+/** Creates a new user account */
+export async function createUser(email: string, password: string, role: 'User' | 'Admin'): Promise<void> {
+  await api.post('/api/admin/users', { email, password, role });
+}
+
 /** Updates a user's role */
 export async function updateUserRole(userId: number, role: 'User' | 'Admin'): Promise<void> {
   await api.put(`/api/admin/users/${userId}/role`, { role });
+}
+
+/** Manually overrides a user's subscription plan */
+export async function updateUserPlan(userId: number, plan: 'Free' | 'Pro'): Promise<void> {
+  await api.put(`/api/admin/users/${userId}/plan`, { plan });
 }
 
 /** Deletes a user and all their data */

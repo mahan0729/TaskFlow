@@ -74,6 +74,8 @@ export interface AdminUser {
   email: string;
   role: 'User' | 'Admin';
   plan: 'Free' | 'Pro';
+  stripeCustomerId: string | null;
+  stripeSubscriptionId: string | null;
   projectCount: number;
   taskCount: number;
   createdAt: string;

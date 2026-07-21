@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using TaskFlow.API.Models;
 using TaskFlow.Data;
+using TaskFlow.Data.Entities;
 
 namespace TaskFlow.API.Controllers;
 
@@ -33,6 +34,32 @@ public class AdminController(AppDbContext db) : ControllerBase
     }
 
     /// <summary>
+    /// Creates a new user account from the admin panel.
+    /// </summary>
+    [HttpPost("users")]
+    [ProducesResponseType(StatusCodes.Status201Created)]
+    [ProducesResponseType(StatusCodes.Status409Conflict)]
+    public async Task<IActionResult> CreateUser([FromBody] CreateUserRequest request)
+    {
+        if (await db.Users.AnyAsync(u => u.Email == request.Email))
+            return Conflict(new { message = "Email is already in use." });
+
+        var user = new User
+        {
+            Email = request.Email,
+            PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.Password),
+            Role = request.Role,
+            Plan = "Free",
+            CreatedAt = DateTime.UtcNow,
+            UpdatedAt = DateTime.UtcNow
+        };
+
+        db.Users.Add(user);
+        await db.SaveChangesAsync();
+        return StatusCode(201);
+    }
+
+    /// <summary>
     /// Returns a paginated list of all users with project and task counts.
     /// </summary>
     /// <param name="page">Page number (1-based). Defaults to 1.</param>
@@ -50,6 +77,8 @@ public class AdminController(AppDbContext db) : ControllerBase
                 u.Email,
                 u.Role,
                 u.Plan,
+                u.StripeCustomerId,
+                u.StripeSubscriptionId,
                 u.Projects.Count,
                 u.Projects.SelectMany(p => p.Tasks).Count(),
                 u.CreatedAt))
@@ -72,6 +101,27 @@ public class AdminController(AppDbContext db) : ControllerBase
         if (user is null) return NotFound();
 
         user.Role = request.Role;
+        user.UpdatedAt = DateTime.UtcNow;
+        await db.SaveChangesAsync();
+
+        return NoContent();
+    }
+
+    /// <summary>
+    /// Manually overrides a user's subscription plan.
+    /// Use to comp a user on Pro or downgrade without going through Stripe.
+    /// </summary>
+    [HttpPut("users/{id:int}/plan")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> UpdatePlan([FromRoute] int id, [FromBody] UpdateUserPlanRequest request)
+    {
+        var user = await db.Users.FindAsync(id);
+        if (user is null) return NotFound();
+
+        user.Plan = request.Plan;
+        if (request.Plan == "Free")
+            user.StripeSubscriptionId = null;
         user.UpdatedAt = DateTime.UtcNow;
         await db.SaveChangesAsync();
 

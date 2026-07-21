@@ -3,14 +3,21 @@
  * Only reachable by users with the "Admin" role (enforced by ProtectedRoute and the API).
  */
 import { useEffect, useState } from 'react';
-import { getAdminStats, getAdminUsers, updateUserRole, deleteUser } from '../services/admin.service';
+import { getAdminStats, getAdminUsers, updateUserRole, updateUserPlan, deleteUser, createUser } from '../services/admin.service';
 import type { AdminStats, AdminUser } from '../types';
+
+const EMPTY_FORM = { email: '', password: '', role: 'User' as 'User' | 'Admin' };
 
 export default function AdminPage() {
   const [stats, setStats]   = useState<AdminStats | null>(null);
   const [users, setUsers]   = useState<AdminUser[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError]   = useState('');
+
+  const [showCreate, setShowCreate] = useState(false);
+  const [form, setForm] = useState(EMPTY_FORM);
+  const [creating, setCreating] = useState(false);
+  const [createError, setCreateError] = useState('');
 
   useEffect(() => {
     async function load() {
@@ -39,6 +46,36 @@ export default function AdminPage() {
     }
   }
 
+  async function handlePlanToggle(user: AdminUser) {
+    const newPlan = user.plan === 'Pro' ? 'Free' : 'Pro';
+    if (!confirm(`Change ${user.email}'s plan to ${newPlan}?`)) return;
+    try {
+      await updateUserPlan(user.id, newPlan);
+      setUsers(prev => prev.map(u => u.id === user.id ? { ...u, plan: newPlan, stripeSubscriptionId: newPlan === 'Free' ? null : u.stripeSubscriptionId } : u));
+    } catch {
+      setError('Failed to update plan.');
+    }
+  }
+
+  async function handleCreate(e: React.FormEvent) {
+    e.preventDefault();
+    setCreating(true);
+    setCreateError('');
+    try {
+      await createUser(form.email, form.password, form.role);
+      const [s, u] = await Promise.all([getAdminStats(), getAdminUsers()]);
+      setStats(s);
+      setUsers(u);
+      setShowCreate(false);
+      setForm(EMPTY_FORM);
+    } catch (err: unknown) {
+      const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
+      setCreateError(msg ?? 'Failed to create user.');
+    } finally {
+      setCreating(false);
+    }
+  }
+
   async function handleDelete(user: AdminUser) {
     if (!confirm(`Permanently delete ${user.email} and all their data?`)) return;
     try {
@@ -55,10 +92,76 @@ export default function AdminPage() {
     <div className="space-y-8">
 
       {/* Page header */}
-      <div>
-        <h1 className="text-2xl font-bold text-gray-900">Admin Panel</h1>
-        <p className="text-sm text-gray-500 mt-1">Platform overview and user management.</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Admin Panel</h1>
+          <p className="text-sm text-gray-500 mt-1">Platform overview and user management.</p>
+        </div>
+        <button
+          onClick={() => { setShowCreate(true); setCreateError(''); }}
+          className="btn-primary text-sm"
+        >
+          + Create User
+        </button>
       </div>
+
+      {/* Create User modal */}
+      {showCreate && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-sm p-6 space-y-4">
+            <h2 className="text-lg font-semibold text-gray-900">Create User</h2>
+            <form onSubmit={handleCreate} className="space-y-3">
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Email</label>
+                <input
+                  type="email"
+                  required
+                  value={form.email}
+                  onChange={e => setForm(f => ({ ...f, email: e.target.value }))}
+                  className="input w-full"
+                  placeholder="user@example.com"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Password</label>
+                <input
+                  type="password"
+                  required
+                  minLength={8}
+                  value={form.password}
+                  onChange={e => setForm(f => ({ ...f, password: e.target.value }))}
+                  className="input w-full"
+                  placeholder="Min 8 characters"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Role</label>
+                <select
+                  value={form.role}
+                  onChange={e => setForm(f => ({ ...f, role: e.target.value as 'User' | 'Admin' }))}
+                  className="input w-full"
+                >
+                  <option value="User">User</option>
+                  <option value="Admin">Admin</option>
+                </select>
+              </div>
+              {createError && <p className="text-xs text-red-600">{createError}</p>}
+              <div className="flex gap-3 pt-1">
+                <button type="submit" disabled={creating} className="btn-primary flex-1">
+                  {creating ? 'Creating…' : 'Create'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { setShowCreate(false); setForm(EMPTY_FORM); }}
+                  className="btn-secondary flex-1"
+                >
+                  Cancel
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
       {error && (
         <div className="p-3 rounded-lg bg-red-50 border border-red-200 text-sm text-red-700">{error}</div>
@@ -84,7 +187,7 @@ export default function AdminPage() {
             <table className="w-full text-sm">
               <thead className="bg-gray-50 border-b border-gray-200">
                 <tr>
-                  {['Email', 'Role', 'Plan', 'Projects', 'Tasks', 'Joined', 'Actions'].map(h => (
+                  {['Email', 'Role', 'Plan', 'Subscription ID', 'Projects', 'Tasks', 'Joined', 'Actions'].map(h => (
                     <th key={h} className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">
                       {h}
                     </th>
@@ -110,6 +213,13 @@ export default function AdminPage() {
                       </span>
                     </td>
 
+                    {/* Subscription ID */}
+                    <td className="px-4 py-3 text-gray-400 font-mono text-xs">
+                      {user.stripeSubscriptionId
+                        ? <span title={user.stripeSubscriptionId}>{user.stripeSubscriptionId.slice(0, 14)}…</span>
+                        : <span className="text-gray-300">—</span>}
+                    </td>
+
                     <td className="px-4 py-3 text-gray-600">{user.projectCount}</td>
                     <td className="px-4 py-3 text-gray-600">{user.taskCount}</td>
                     <td className="px-4 py-3 text-gray-400">
@@ -124,6 +234,12 @@ export default function AdminPage() {
                           className="text-xs text-primary-600 hover:underline"
                         >
                           {user.role === 'Admin' ? 'Remove Admin' : 'Make Admin'}
+                        </button>
+                        <button
+                          onClick={() => handlePlanToggle(user)}
+                          className="text-xs text-emerald-600 hover:underline"
+                        >
+                          {user.plan === 'Pro' ? 'Set Free' : 'Set Pro'}
                         </button>
                         <button
                           onClick={() => handleDelete(user)}
