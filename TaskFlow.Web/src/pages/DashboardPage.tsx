@@ -52,7 +52,7 @@ export default function DashboardPage() {
   if (loading) return <LoadingState />;
   if (error)   return <p className="text-red-500">{error}</p>;
 
-  const firstName = user?.email?.split('@')[0] ?? 'there';
+  const firstName = user?.firstName ?? user?.email?.split('@')[0] ?? 'there';
 
   return (
     <div className="space-y-8">
@@ -60,7 +60,7 @@ export default function DashboardPage() {
       {/* ── Page header ────────────────────────────────────────────── */}
       <div>
         <h1 className="text-3xl font-black text-gray-900">
-          Good {getGreeting()}, <span className="text-primary-600">{firstName}</span> 👋
+          Good {getGreeting()}, <Link to="/profile" className="text-primary-600 hover:underline">{firstName}</Link> 👋
         </h1>
         <p className="mt-1 text-gray-500">Here's what's happening with your work today.</p>
       </div>
