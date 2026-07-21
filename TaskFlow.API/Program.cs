@@ -42,6 +42,7 @@ StripeConfiguration.ApiKey = builder.Configuration["Stripe:SecretKey"];
 builder.Services.AddScoped<TaskFlow.API.Services.TokenService>();
 builder.Services.AddScoped<AuthService>();
 builder.Services.AddScoped<StripeService>();
+builder.Services.AddScoped<IEmailService, SendGridEmailService>();
 
 // ── CORS ──────────────────────────────────────────────────────────────────────
 // Development: allow the Vite dev server. Production: restrict to the deployed frontend URL.

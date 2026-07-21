@@ -3,13 +3,15 @@
    Keep in sync with TaskFlow.API/Models/*.cs
    ────────────────────────────────────────────────────────────── */
 
-/** Returned by /api/auth/login and /api/auth/refresh */
+/** Returned by /api/auth/login, /api/auth/refresh, and /api/auth/verify-email */
 export interface AuthResponse {
   accessToken: string;
   refreshToken: string;
   email: string;
   role: 'User' | 'Admin';
   plan: 'Free' | 'Pro';
+  firstName: string | null;
+  lastName: string | null;
 }
 
 /** Stored in localStorage to persist the session across page reloads */
@@ -19,6 +21,8 @@ export interface StoredAuth {
   email: string;
   role: 'User' | 'Admin';
   plan: 'Free' | 'Pro';
+  firstName: string | null;
+  lastName: string | null;
 }
 
 /** A project belonging to the current user */
@@ -72,6 +76,8 @@ export interface AdminStats {
 export interface AdminUser {
   id: number;
   email: string;
+  firstName: string | null;
+  lastName: string | null;
   role: 'User' | 'Admin';
   plan: 'Free' | 'Pro';
   stripeCustomerId: string | null;

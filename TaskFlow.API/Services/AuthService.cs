@@ -5,57 +5,110 @@ using TaskFlow.Data.Entities;
 
 namespace TaskFlow.API.Services;
 
-/// <summary>
-/// Handles user registration, login, token refresh, and logout.
-/// </summary>
-public class AuthService(AppDbContext db, TokenService tokenService)
+public class AuthService(AppDbContext db, TokenService tokenService, IEmailService emailService)
 {
-    // Free plan task limit — Pro users have no limit
     private const int FreeTaskLimit = 10;
 
-    /// <summary>
-    /// Registers a new user with a BCrypt-hashed password.
-    /// </summary>
-    /// <param name="request">Email and plaintext password.</param>
-    /// <returns>AuthResponse with tokens, or null if the email is already taken.</returns>
-    public async Task<AuthResponse?> RegisterAsync(RegisterRequest request)
+    public async Task<RegisterPendingResponse?> RegisterAsync(RegisterRequest request)
     {
-        // Reject duplicate emails
-        if (await db.Users.AnyAsync(u => u.Email == request.Email))
+        if (await db.Users.AnyAsync(u => u.Email == request.Email.ToLowerInvariant()))
             return null;
 
+        var code = GenerateCode();
         var user = new User
         {
             Email = request.Email.ToLowerInvariant(),
-            PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.Password)
+            PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.Password),
+            VerificationCode = code,
+            VerificationCodeExpiry = DateTime.UtcNow.AddMinutes(30),
         };
 
         db.Users.Add(user);
         await db.SaveChangesAsync();
 
-        return await IssueTokensAsync(user);
+        await emailService.SendVerificationEmailAsync(user.Email, user.Email, code);
+
+        return new RegisterPendingResponse(user.Email, "Check your email for a 6-digit verification code.");
     }
 
-    /// <summary>
-    /// Validates credentials and returns tokens on success.
-    /// </summary>
-    /// <param name="request">Email and plaintext password.</param>
-    /// <returns>AuthResponse, or null if credentials are invalid.</returns>
-    public async Task<AuthResponse?> LoginAsync(LoginRequest request)
+    /// <returns>Auth response, or null on bad credentials. NeedsVerification true when email not yet confirmed.</returns>
+    public async Task<(AuthResponse? Auth, bool NeedsVerification)> LoginAsync(LoginRequest request)
     {
         var user = await db.Users.FirstOrDefaultAsync(u => u.Email == request.Email.ToLowerInvariant());
 
         if (user is null || !BCrypt.Net.BCrypt.Verify(request.Password, user.PasswordHash))
+            return (null, false);
+
+        if (!user.EmailVerified)
+            return (null, true);
+
+        return (await IssueTokensAsync(user), false);
+    }
+
+    public async Task<AuthResponse?> VerifyEmailAsync(VerifyEmailRequest request)
+    {
+        var user = await db.Users.FirstOrDefaultAsync(u => u.Email == request.Email.ToLowerInvariant());
+
+        if (user is null
+            || user.VerificationCode != request.Code
+            || user.VerificationCodeExpiry < DateTime.UtcNow)
             return null;
+
+        user.EmailVerified = true;
+        user.VerificationCode = null;
+        user.VerificationCodeExpiry = null;
+        user.UpdatedAt = DateTime.UtcNow;
+        await db.SaveChangesAsync();
 
         return await IssueTokensAsync(user);
     }
 
-    /// <summary>
-    /// Rotates a refresh token: revokes the old one and issues a new pair.
-    /// </summary>
-    /// <param name="request">The client's current refresh token.</param>
-    /// <returns>New AuthResponse, or null if the token is invalid or expired.</returns>
+    public async Task ResendVerificationAsync(ResendVerificationRequest request)
+    {
+        var user = await db.Users.FirstOrDefaultAsync(u => u.Email == request.Email.ToLowerInvariant());
+        if (user is null || user.EmailVerified) return;
+
+        var code = GenerateCode();
+        user.VerificationCode = code;
+        user.VerificationCodeExpiry = DateTime.UtcNow.AddMinutes(30);
+        user.UpdatedAt = DateTime.UtcNow;
+        await db.SaveChangesAsync();
+
+        await emailService.SendVerificationEmailAsync(user.Email, user.FirstName ?? user.Email, code);
+    }
+
+    public async Task ForgotPasswordAsync(ForgotPasswordRequest request)
+    {
+        var user = await db.Users.FirstOrDefaultAsync(u => u.Email == request.Email.ToLowerInvariant());
+        if (user is null) return; // silent — don't reveal whether email exists
+
+        var code = GenerateCode();
+        user.PasswordResetCode = code;
+        user.PasswordResetCodeExpiry = DateTime.UtcNow.AddMinutes(30);
+        user.UpdatedAt = DateTime.UtcNow;
+        await db.SaveChangesAsync();
+
+        await emailService.SendPasswordResetEmailAsync(user.Email, user.FirstName ?? user.Email, code);
+    }
+
+    public async Task<bool> ResetPasswordAsync(ResetPasswordRequest request)
+    {
+        var user = await db.Users.FirstOrDefaultAsync(u => u.Email == request.Email.ToLowerInvariant());
+
+        if (user is null
+            || user.PasswordResetCode != request.Code
+            || user.PasswordResetCodeExpiry < DateTime.UtcNow)
+            return false;
+
+        user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.NewPassword);
+        user.PasswordResetCode = null;
+        user.PasswordResetCodeExpiry = null;
+        user.UpdatedAt = DateTime.UtcNow;
+        await db.SaveChangesAsync();
+
+        return true;
+    }
+
     public async Task<AuthResponse?> RefreshAsync(RefreshRequest request)
     {
         var stored = await db.RefreshTokens
@@ -65,17 +118,12 @@ public class AuthService(AppDbContext db, TokenService tokenService)
         if (stored is null || stored.ExpiresAt < DateTime.UtcNow)
             return null;
 
-        // Revoke the used token (rotation — prevents replay attacks)
         stored.IsRevoked = true;
         await db.SaveChangesAsync();
 
         return await IssueTokensAsync(stored.User);
     }
 
-    /// <summary>
-    /// Revokes all refresh tokens for the user, effectively logging them out everywhere.
-    /// </summary>
-    /// <param name="userId">The authenticated user's ID from the JWT claim.</param>
     public async Task LogoutAsync(int userId)
     {
         var tokens = await db.RefreshTokens
@@ -88,12 +136,32 @@ public class AuthService(AppDbContext db, TokenService tokenService)
         await db.SaveChangesAsync();
     }
 
-    /// <summary>
-    /// Returns the Free plan task limit for display on the frontend.
-    /// </summary>
+    public async Task<bool> ChangePasswordAsync(int userId, ChangePasswordRequest request)
+    {
+        var user = await db.Users.FindAsync(userId);
+        if (user is null || !BCrypt.Net.BCrypt.Verify(request.CurrentPassword, user.PasswordHash))
+            return false;
+
+        user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.NewPassword);
+        user.UpdatedAt = DateTime.UtcNow;
+        await db.SaveChangesAsync();
+        return true;
+    }
+
+    public async Task<bool> UpdateProfileAsync(int userId, UpdateProfileRequest request)
+    {
+        var user = await db.Users.FindAsync(userId);
+        if (user is null) return false;
+
+        user.FirstName = request.FirstName.Trim();
+        user.LastName = request.LastName.Trim();
+        user.UpdatedAt = DateTime.UtcNow;
+        await db.SaveChangesAsync();
+        return true;
+    }
+
     public int GetFreeTaskLimit() => FreeTaskLimit;
 
-    // Creates and persists a new refresh token, then returns the full auth response
     private async Task<AuthResponse> IssueTokensAsync(User user)
     {
         var accessToken = tokenService.GenerateAccessToken(user);
@@ -109,6 +177,9 @@ public class AuthService(AppDbContext db, TokenService tokenService)
 
         await db.SaveChangesAsync();
 
-        return new AuthResponse(accessToken, refreshToken, user.Email, user.Role, user.Plan);
+        return new AuthResponse(accessToken, refreshToken, user.Email, user.Role, user.Plan, user.FirstName, user.LastName);
     }
+
+    private static string GenerateCode() =>
+        Random.Shared.Next(100000, 999999).ToString();
 }

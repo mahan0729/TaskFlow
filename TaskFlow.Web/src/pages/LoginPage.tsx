@@ -19,7 +19,12 @@ export default function LoginPage() {
     try {
       await login(email, password);
       navigate('/dashboard');
-    } catch { /* error shown via AuthContext */ }
+    } catch (err: unknown) {
+      const data = (err as { response?: { data?: { needsVerification?: boolean } } })?.response?.data;
+      if (data?.needsVerification) {
+        navigate(`/verify-email?email=${encodeURIComponent(email)}`);
+      }
+    }
   }
 
   return (
@@ -66,7 +71,12 @@ export default function LoginPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-blue-100 mb-1.5">Password</label>
+              <div className="flex justify-between items-center mb-1.5">
+                <label className="text-sm font-medium text-blue-100">Password</label>
+                <Link to="/forgot-password" className="text-xs text-blue-300 hover:text-white">
+                  Forgot password?
+                </Link>
+              </div>
               <PasswordInput
                 autoComplete="current-password"
                 required

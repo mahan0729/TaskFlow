@@ -200,7 +200,12 @@ export default function AdminPage() {
               <tbody className="divide-y divide-gray-100">
                 {users.map(user => (
                   <tr key={user.id} className="hover:bg-gray-50 transition-colors">
-                    <td className="px-4 py-3 text-gray-900 font-medium">{user.email}</td>
+                    <td className="px-4 py-3">
+                      <p className="text-gray-900 font-medium">
+                        {user.firstName ? `${user.firstName} ${user.lastName ?? ''}`.trim() : <span className="text-gray-400 italic text-xs">No name set</span>}
+                      </p>
+                      <p className="text-xs text-gray-400">{user.email}</p>
+                    </td>
 
                     {/* Role badge */}
                     <td className="px-4 py-3">

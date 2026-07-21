@@ -46,10 +46,11 @@ public class AdminController(AppDbContext db) : ControllerBase
 
         var user = new User
         {
-            Email = request.Email,
+            Email = request.Email.ToLowerInvariant(),
             PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.Password),
             Role = request.Role,
             Plan = "Free",
+            EmailVerified = true, // admin-created accounts are pre-verified
             CreatedAt = DateTime.UtcNow,
             UpdatedAt = DateTime.UtcNow
         };
@@ -75,6 +76,8 @@ public class AdminController(AppDbContext db) : ControllerBase
             .Select(u => new AdminUserResponse(
                 u.Id,
                 u.Email,
+                u.FirstName,
+                u.LastName,
                 u.Role,
                 u.Plan,
                 u.StripeCustomerId,

@@ -4,6 +4,8 @@ namespace TaskFlow.API.Models;
 public record AdminUserResponse(
     int Id,
     string Email,
+    string? FirstName,
+    string? LastName,
     string Role,
     string Plan,
     string? StripeCustomerId,
@@ -14,11 +16,8 @@ public record AdminUserResponse(
 
 /// <summary>Request body for an admin to create a new user.</summary>
 public record CreateUserRequest(
-    /// <summary>Email address for the new account.</summary>
     string Email,
-    /// <summary>Initial plaintext password (hashed before storage).</summary>
     string Password,
-    /// <summary>Allowed values: "User", "Admin". Defaults to "User".</summary>
     string Role = "User");
 
 /// <summary>Request body for an admin to change a user's role.</summary>

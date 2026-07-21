@@ -2,7 +2,7 @@
  * Layout — dark navy sidebar + blue-tinted content area.
  * The sidebar collapses to icons only on small screens (future enhancement).
  */
-import { NavLink, Outlet, useNavigate } from 'react-router-dom';
+import { NavLink, Link, Outlet, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
 /** Icon components — inline SVG to avoid an icon library dependency */
@@ -91,13 +91,24 @@ export default function Layout() {
 
         {/* User footer */}
         <div className="px-3 py-4 border-t border-white/10">
-          {/* User email */}
-          <div className="px-4 py-2 mb-1">
-            <p className="text-xs text-blue-300 truncate">{user?.email}</p>
+          {/* Clickable name / email → profile page */}
+          <Link
+            to="/profile"
+            className="block px-4 py-2 mb-1 rounded-lg hover:bg-white/5 transition-colors group"
+            title="Edit your profile"
+          >
+            <p className="text-sm text-white font-medium truncate group-hover:text-blue-200 transition-colors">
+              {user?.firstName
+                ? `${user.firstName} ${user.lastName ?? ''}`.trim()
+                : user?.email}
+            </p>
+            {user?.firstName && (
+              <p className="text-xs text-slate-400 truncate">{user.email}</p>
+            )}
             {user?.role === 'Admin' && (
               <span className="text-xs text-purple-400 font-semibold">Admin</span>
             )}
-          </div>
+          </Link>
 
           {/* Logout button */}
           <button
@@ -107,6 +118,11 @@ export default function Layout() {
             <Icons.Logout />
             Sign out
           </button>
+
+          {/* Copyright */}
+          <p className="mt-3 px-4 text-xs text-slate-600 select-none">
+            &copy; {new Date().getFullYear()} Matt Mahan
+          </p>
         </div>
       </aside>
 

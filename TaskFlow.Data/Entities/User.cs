@@ -17,6 +17,17 @@ public class User : BaseEntity
     /// <summary>Subscription plan: "Free" or "Pro".</summary>
     public string Plan { get; set; } = "Free";
 
+    public string? FirstName { get; set; }
+    public string? LastName { get; set; }
+
+    /// <summary>True once the user has confirmed their email via the 6-digit code.</summary>
+    public bool EmailVerified { get; set; } = false;
+    public string? VerificationCode { get; set; }
+    public DateTime? VerificationCodeExpiry { get; set; }
+
+    public string? PasswordResetCode { get; set; }
+    public DateTime? PasswordResetCodeExpiry { get; set; }
+
     /// <summary>Stripe customer ID for billing (e.g. cus_xxxxx).</summary>
     public string? StripeCustomerId { get; set; }
 

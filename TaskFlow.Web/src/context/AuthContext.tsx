@@ -1,70 +1,60 @@
-/**
- * AuthContext — provides the current user's auth state to the entire app.
- *
- * Persists tokens and user info in localStorage so the session survives
- * page reloads. The Axios interceptor in api.ts reads from the same keys.
- */
 import { createContext, useContext, useState, useCallback, type ReactNode } from 'react';
 import type { StoredAuth } from '../types';
 import * as authService from '../services/auth.service';
 
-// ── Context shape ─────────────────────────────────────────────────────────────
-
 interface AuthContextValue {
-  /** Currently authenticated user, or null if logged out */
   user: StoredAuth | null;
-  /** True while a login or register request is in flight */
   loading: boolean;
-  /** Error message from the last failed auth attempt */
   error: string | null;
   login: (email: string, password: string) => Promise<void>;
-  register: (email: string, password: string) => Promise<void>;
+  /** Returns the email so the caller can redirect to /verify-email */
+  register: (email: string, password: string) => Promise<{ email: string }>;
   logout: () => Promise<void>;
-  /** Clears the error banner (called when the user edits the form) */
   clearError: () => void;
+  verifyEmail: (email: string, code: string) => Promise<void>;
+  resendVerification: (email: string) => Promise<void>;
+  forgotPassword: (email: string) => Promise<void>;
+  resetPassword: (email: string, code: string, newPassword: string) => Promise<void>;
+  updateProfile: (firstName: string, lastName: string) => Promise<void>;
+  changePassword: (currentPassword: string, newPassword: string) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
-// ── Storage helpers ───────────────────────────────────────────────────────────
-
-/** Reads all auth fields from localStorage and returns a StoredAuth or null */
 function readStoredAuth(): StoredAuth | null {
-  const accessToken = localStorage.getItem('accessToken');
+  const accessToken  = localStorage.getItem('accessToken');
   const refreshToken = localStorage.getItem('refreshToken');
-  const email = localStorage.getItem('email');
-  const role = localStorage.getItem('role') as StoredAuth['role'] | null;
-  const plan = localStorage.getItem('plan') as StoredAuth['plan'] | null;
+  const email        = localStorage.getItem('email');
+  const role         = localStorage.getItem('role') as StoredAuth['role'] | null;
+  const plan         = localStorage.getItem('plan') as StoredAuth['plan'] | null;
+  const firstName    = localStorage.getItem('firstName');
+  const lastName     = localStorage.getItem('lastName');
 
   if (!accessToken || !refreshToken || !email || !role || !plan) return null;
-  return { accessToken, refreshToken, email, role, plan };
+  return { accessToken, refreshToken, email, role, plan, firstName, lastName };
 }
 
-/** Persists all auth fields to localStorage */
 function writeStoredAuth(auth: StoredAuth): void {
-  localStorage.setItem('accessToken', auth.accessToken);
+  localStorage.setItem('accessToken',  auth.accessToken);
   localStorage.setItem('refreshToken', auth.refreshToken);
-  localStorage.setItem('email', auth.email);
-  localStorage.setItem('role', auth.role);
-  localStorage.setItem('plan', auth.plan);
+  localStorage.setItem('email',        auth.email);
+  localStorage.setItem('role',         auth.role);
+  localStorage.setItem('plan',         auth.plan);
+  if (auth.firstName) localStorage.setItem('firstName', auth.firstName);
+  else localStorage.removeItem('firstName');
+  if (auth.lastName) localStorage.setItem('lastName', auth.lastName);
+  else localStorage.removeItem('lastName');
 }
 
-/** Removes all auth fields from localStorage */
 function clearStoredAuth(): void {
-  localStorage.removeItem('accessToken');
-  localStorage.removeItem('refreshToken');
-  localStorage.removeItem('email');
-  localStorage.removeItem('role');
-  localStorage.removeItem('plan');
+  ['accessToken', 'refreshToken', 'email', 'role', 'plan', 'firstName', 'lastName']
+    .forEach(k => localStorage.removeItem(k));
 }
-
-// ── Provider ──────────────────────────────────────────────────────────────────
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  // Initialise from localStorage so the user stays logged in after a reload
-  const [user, setUser] = useState<StoredAuth | null>(readStoredAuth);
+  const [user, setUser]       = useState<StoredAuth | null>(readStoredAuth);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError]     = useState<string | null>(null);
 
   const login = useCallback(async (email: string, password: string) => {
     setLoading(true);
@@ -75,11 +65,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       writeStoredAuth(stored);
       setUser(stored);
     } catch (err: unknown) {
-      // Surface the API error message if available, otherwise a generic fallback
-      const message =
-        (err as { response?: { data?: { message?: string } } })?.response?.data?.message
-        ?? 'Invalid email or password.';
-      setError(message);
+      const data = (err as { response?: { data?: { message?: string; needsVerification?: boolean } } })?.response?.data;
+      setError(data?.message ?? 'Invalid email or password.');
       throw err;
     } finally {
       setLoading(false);
@@ -91,9 +78,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setError(null);
     try {
       const response = await authService.register(email, password);
-      const stored: StoredAuth = { ...response };
-      writeStoredAuth(stored);
-      setUser(stored);
+      return { email: response.email };
     } catch (err: unknown) {
       const message =
         (err as { response?: { data?: { message?: string } } })?.response?.data?.message
@@ -105,12 +90,47 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
-  const logout = useCallback(async () => {
+  const verifyEmail = useCallback(async (email: string, code: string) => {
+    setLoading(true);
+    setError(null);
     try {
-      // Revoke refresh tokens on the server first
-      await authService.logout();
+      const response = await authService.verifyEmail(email, code);
+      const stored: StoredAuth = { ...response };
+      writeStoredAuth(stored);
+      setUser(stored);
     } finally {
-      // Always clear local state even if the server call fails
+      setLoading(false);
+    }
+  }, []);
+
+  const resendVerification = useCallback(async (email: string) => {
+    await authService.resendVerification(email);
+  }, []);
+
+  const forgotPassword = useCallback(async (email: string) => {
+    await authService.forgotPassword(email);
+  }, []);
+
+  const resetPassword = useCallback(async (email: string, code: string, newPassword: string) => {
+    await authService.resetPassword(email, code, newPassword);
+  }, []);
+
+  const updateProfile = useCallback(async (firstName: string, lastName: string) => {
+    const result = await authService.updateProfile(firstName, lastName);
+    setUser(prev => {
+      if (!prev) return prev;
+      const updated = { ...prev, firstName: result.firstName, lastName: result.lastName };
+      writeStoredAuth(updated);
+      return updated;
+    });
+  }, []);
+
+  const changePassword = useCallback(async (currentPassword: string, newPassword: string) => {
+    await authService.changePassword(currentPassword, newPassword);
+  }, []);
+
+  const logout = useCallback(async () => {
+    try { await authService.logout(); } finally {
       clearStoredAuth();
       setUser(null);
     }
@@ -119,15 +139,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const clearError = useCallback(() => setError(null), []);
 
   return (
-    <AuthContext.Provider value={{ user, loading, error, login, register, logout, clearError }}>
+    <AuthContext.Provider value={{
+      user, loading, error,
+      login, register, logout, clearError,
+      verifyEmail, resendVerification,
+      forgotPassword, resetPassword,
+      updateProfile, changePassword,
+    }}>
       {children}
     </AuthContext.Provider>
   );
 }
 
-// ── Hook ──────────────────────────────────────────────────────────────────────
-
-/** Consume auth state anywhere inside <AuthProvider> */
 export function useAuth(): AuthContextValue {
   const ctx = useContext(AuthContext);
   if (!ctx) throw new Error('useAuth must be used within AuthProvider');

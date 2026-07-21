@@ -21,8 +21,8 @@ export default function RegisterPage() {
     if (password !== confirm) { setMatchError('Passwords do not match.'); return; }
     setMatchError('');
     try {
-      await register(email, password);
-      navigate('/dashboard');
+      const result = await register(email, password);
+      navigate(`/verify-email?email=${encodeURIComponent(result.email)}`);
     } catch { /* error shown via AuthContext */ }
   }
 
