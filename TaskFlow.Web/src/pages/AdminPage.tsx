@@ -5,6 +5,7 @@
 import { useEffect, useState } from 'react';
 import { getAdminStats, getAdminUsers, updateUserRole, updateUserPlan, deleteUser, createUser } from '../services/admin.service';
 import { PasswordInput } from '../components/PasswordInput';
+import { Tooltip } from '../components/Tooltip';
 import type { AdminStats, AdminUser } from '../types';
 
 const EMPTY_FORM = { email: '', password: '', role: 'User' as 'User' | 'Admin' };
@@ -214,14 +215,16 @@ export default function AdminPage() {
                       </span>
                     </td>
 
-                    {/* Plan badge — hover to see Stripe subscription ID */}
+                    {/* Plan badge */}
                     <td className="px-4 py-3">
-                      <span
-                        className={`badge ${user.plan === 'Pro' ? 'bg-primary-100 text-primary-700' : 'bg-gray-100 text-gray-600'}`}
-                        title={user.stripeSubscriptionId ?? undefined}
+                      <Tooltip
+                        text={user.stripeSubscriptionId ? `Stripe: ${user.stripeSubscriptionId}` : user.plan === 'Pro' ? 'Pro — manually set' : 'Free plan'}
+                        position="top"
                       >
-                        {user.plan}
-                      </span>
+                        <span className={`badge ${user.plan === 'Pro' ? 'bg-primary-100 text-primary-700' : 'bg-gray-100 text-gray-600'}`}>
+                          {user.plan}
+                        </span>
+                      </Tooltip>
                     </td>
 
                     <td className="px-4 py-3 text-gray-600">{user.projectCount}</td>
@@ -233,24 +236,21 @@ export default function AdminPage() {
                     {/* Sticky Actions */}
                     <td className="sticky right-0 bg-white border-l border-gray-100 px-4 py-3">
                       <div className="flex gap-3">
-                        <button
-                          onClick={() => handleRoleToggle(user)}
-                          className="text-xs text-primary-600 hover:underline whitespace-nowrap"
-                        >
-                          {user.role === 'Admin' ? 'Remove Admin' : 'Make Admin'}
-                        </button>
-                        <button
-                          onClick={() => handlePlanToggle(user)}
-                          className="text-xs text-emerald-600 hover:underline whitespace-nowrap"
-                        >
-                          {user.plan === 'Pro' ? 'Set Free' : 'Set Pro'}
-                        </button>
-                        <button
-                          onClick={() => handleDelete(user)}
-                          className="text-xs text-red-500 hover:underline"
-                        >
-                          Delete
-                        </button>
+                        <Tooltip text={user.role === 'Admin' ? 'Remove admin privileges' : 'Grant admin access to this user'} position="top">
+                          <button onClick={() => handleRoleToggle(user)} className="text-xs text-primary-600 hover:underline whitespace-nowrap">
+                            {user.role === 'Admin' ? 'Remove Admin' : 'Make Admin'}
+                          </button>
+                        </Tooltip>
+                        <Tooltip text={user.plan === 'Pro' ? 'Downgrade to Free plan' : 'Upgrade to Pro without Stripe'} position="top">
+                          <button onClick={() => handlePlanToggle(user)} className="text-xs text-emerald-600 hover:underline whitespace-nowrap">
+                            {user.plan === 'Pro' ? 'Set Free' : 'Set Pro'}
+                          </button>
+                        </Tooltip>
+                        <Tooltip text="Permanently delete this user and all their data" position="top">
+                          <button onClick={() => handleDelete(user)} className="text-xs text-red-500 hover:underline">
+                            Delete
+                          </button>
+                        </Tooltip>
                       </div>
                     </td>
                   </tr>

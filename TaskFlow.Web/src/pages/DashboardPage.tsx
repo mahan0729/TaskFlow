@@ -6,6 +6,7 @@ import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { getProjects } from '../services/projects.service';
 import { getTasks } from '../services/tasks.service';
+import { Tooltip } from '../components/Tooltip';
 import type { Project, Task } from '../types';
 
 const PRIORITY_DOT: Record<Task['priority'], string> = {
@@ -67,10 +68,18 @@ export default function DashboardPage() {
 
       {/* ── Stat cards ─────────────────────────────────────────────── */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard label="Projects"    value={projects.length}  accent="from-blue-500 to-blue-600" />
-        <StatCard label="Total Tasks" value={tasks.length}     accent="from-violet-500 to-violet-600" />
-        <StatCard label="In Progress" value={inProgressTasks}  accent="from-amber-500 to-orange-500" />
-        <StatCard label="Completed"   value={doneTasks}         accent="from-emerald-500 to-teal-500" />
+        <Tooltip text="Total number of projects you've created" position="bottom">
+          <StatCard label="Projects"    value={projects.length}  accent="from-blue-500 to-blue-600" />
+        </Tooltip>
+        <Tooltip text="All tasks across every project" position="bottom">
+          <StatCard label="Total Tasks" value={tasks.length}     accent="from-violet-500 to-violet-600" />
+        </Tooltip>
+        <Tooltip text="Tasks currently being worked on" position="bottom">
+          <StatCard label="In Progress" value={inProgressTasks}  accent="from-amber-500 to-orange-500" />
+        </Tooltip>
+        <Tooltip text="Tasks marked as Done" position="bottom">
+          <StatCard label="Completed"   value={doneTasks}        accent="from-emerald-500 to-teal-500" />
+        </Tooltip>
       </div>
 
       {/* Free plan warning */}
@@ -107,14 +116,18 @@ export default function DashboardPage() {
               <ul className="divide-y divide-gray-50">
                 {recentTasks.map(task => (
                   <li key={task.id} className="flex items-center gap-4 px-5 py-4 hover:bg-gray-50 transition-colors">
-                    <span className={`w-2.5 h-2.5 rounded-full flex-shrink-0 ${PRIORITY_DOT[task.priority]}`} />
+                    <Tooltip text={`${task.priority} priority`} position="right">
+                      <span className={`w-2.5 h-2.5 rounded-full flex-shrink-0 ${PRIORITY_DOT[task.priority]}`} />
+                    </Tooltip>
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-semibold text-gray-900 truncate">{task.title}</p>
                       <p className="text-xs text-gray-400 mt-0.5">{task.projectName}</p>
                     </div>
-                    <span className={`badge ${STATUS_BADGE[task.status]}`}>
-                      {task.status === 'InProgress' ? 'In Progress' : task.status}
-                    </span>
+                    <Tooltip text={task.status === 'InProgress' ? 'Currently in progress' : task.status === 'Done' ? 'Completed' : 'Not started yet'} position="left">
+                      <span className={`badge ${STATUS_BADGE[task.status]}`}>
+                        {task.status === 'InProgress' ? 'In Progress' : task.status}
+                      </span>
+                    </Tooltip>
                   </li>
                 ))}
               </ul>

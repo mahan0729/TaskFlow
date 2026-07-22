@@ -3,6 +3,7 @@
  * The sidebar collapses to icons only on small screens (future enhancement).
  */
 import { NavLink, Link, Outlet, useNavigate } from 'react-router-dom';
+import { Tooltip } from './Tooltip';
 import { useAuth } from '../context/AuthContext';
 
 /** Icon components — inline SVG to avoid an icon library dependency */
@@ -69,9 +70,11 @@ export default function Layout() {
             <div>
               <p className="text-white font-bold text-base leading-none">TaskFlow</p>
               {/* Plan badge */}
-              <span className={`text-xs font-semibold ${user?.plan === 'Pro' ? 'text-blue-400' : 'text-slate-400'}`}>
-                {user?.plan ?? 'Free'} Plan
-              </span>
+              <Tooltip text={user?.plan === 'Pro' ? 'Pro plan — unlimited tasks' : 'Free plan — up to 10 tasks. Click Billing to upgrade.'} position="right">
+                <span className={`text-xs font-semibold ${user?.plan === 'Pro' ? 'text-blue-400' : 'text-slate-400'}`}>
+                  {user?.plan ?? 'Free'} Plan
+                </span>
+              </Tooltip>
             </div>
           </div>
         </div>
