@@ -20,6 +20,9 @@ public record CreateUserRequest(
     string Password,
     string Role = "User");
 
+/// <summary>Request body for an admin to edit a user's name.</summary>
+public record EditUserRequest(string? FirstName, string? LastName);
+
 /// <summary>Request body for an admin to change a user's role.</summary>
 public record UpdateUserRoleRequest(
     /// <summary>Allowed values: "User", "Admin"</summary>

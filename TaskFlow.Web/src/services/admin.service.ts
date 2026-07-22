@@ -24,6 +24,11 @@ export async function createUser(email: string, password: string, role: 'User' |
   await api.post('/api/admin/users', { email, password, role });
 }
 
+/** Updates a user's name fields */
+export async function editUser(userId: number, firstName: string, lastName: string): Promise<void> {
+  await api.put(`/api/admin/users/${userId}`, { firstName, lastName });
+}
+
 /** Updates a user's role */
 export async function updateUserRole(userId: number, role: 'User' | 'Admin'): Promise<void> {
   await api.put(`/api/admin/users/${userId}/role`, { role });

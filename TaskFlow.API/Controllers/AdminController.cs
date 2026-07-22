@@ -91,6 +91,25 @@ public class AdminController(AppDbContext db) : ControllerBase
     }
 
     /// <summary>
+    /// Updates a user's name fields.
+    /// </summary>
+    [HttpPut("users/{id:int}")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> EditUser([FromRoute] int id, [FromBody] EditUserRequest request)
+    {
+        var user = await db.Users.FindAsync(id);
+        if (user is null) return NotFound();
+
+        user.FirstName = string.IsNullOrWhiteSpace(request.FirstName) ? null : request.FirstName.Trim();
+        user.LastName  = string.IsNullOrWhiteSpace(request.LastName)  ? null : request.LastName.Trim();
+        user.UpdatedAt = DateTime.UtcNow;
+        await db.SaveChangesAsync();
+
+        return NoContent();
+    }
+
+    /// <summary>
     /// Updates the role of a specific user.
     /// </summary>
     /// <param name="id">Target user's ID (PK).</param>

@@ -3,7 +3,7 @@
  * Only reachable by users with the "Admin" role (enforced by ProtectedRoute and the API).
  */
 import { useEffect, useState } from 'react';
-import { getAdminStats, getAdminUsers, updateUserRole, updateUserPlan, deleteUser, createUser } from '../services/admin.service';
+import { getAdminStats, getAdminUsers, updateUserRole, updateUserPlan, deleteUser, createUser, editUser } from '../services/admin.service';
 import { PasswordInput } from '../components/PasswordInput';
 import { Tooltip } from '../components/Tooltip';
 import type { AdminStats, AdminUser } from '../types';
@@ -20,6 +20,11 @@ export default function AdminPage() {
   const [form, setForm] = useState(EMPTY_FORM);
   const [creating, setCreating] = useState(false);
   const [createError, setCreateError] = useState('');
+
+  const [editingUser, setEditingUser] = useState<AdminUser | null>(null);
+  const [editForm, setEditForm] = useState({ firstName: '', lastName: '' });
+  const [editSaving, setEditSaving] = useState(false);
+  const [editError, setEditError] = useState('');
 
   useEffect(() => {
     async function load() {
@@ -56,6 +61,30 @@ export default function AdminPage() {
       setUsers(prev => prev.map(u => u.id === user.id ? { ...u, plan: newPlan, stripeSubscriptionId: newPlan === 'Free' ? null : u.stripeSubscriptionId } : u));
     } catch {
       setError('Failed to update plan.');
+    }
+  }
+
+  function openEdit(user: AdminUser) {
+    setEditingUser(user);
+    setEditForm({ firstName: user.firstName ?? '', lastName: user.lastName ?? '' });
+    setEditError('');
+  }
+
+  async function handleEditSave(e: React.FormEvent) {
+    e.preventDefault();
+    if (!editingUser) return;
+    setEditSaving(true);
+    setEditError('');
+    try {
+      await editUser(editingUser.id, editForm.firstName, editForm.lastName);
+      setUsers(prev => prev.map(u => u.id === editingUser.id
+        ? { ...u, firstName: editForm.firstName || null, lastName: editForm.lastName || null }
+        : u));
+      setEditingUser(null);
+    } catch {
+      setEditError('Failed to save.');
+    } finally {
+      setEditSaving(false);
     }
   }
 
@@ -164,6 +193,51 @@ export default function AdminPage() {
         </div>
       )}
 
+      {/* Edit User modal */}
+      {editingUser && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-sm p-6 space-y-4">
+            <h2 className="text-lg font-semibold text-gray-900">Edit User</h2>
+            <p className="text-xs text-gray-400">{editingUser.email}</p>
+            <form onSubmit={handleEditSave} className="space-y-3">
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">First Name</label>
+                <input
+                  type="text"
+                  value={editForm.firstName}
+                  onChange={e => setEditForm(f => ({ ...f, firstName: e.target.value }))}
+                  className="input w-full"
+                  placeholder="First name"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Last Name</label>
+                <input
+                  type="text"
+                  value={editForm.lastName}
+                  onChange={e => setEditForm(f => ({ ...f, lastName: e.target.value }))}
+                  className="input w-full"
+                  placeholder="Last name"
+                />
+              </div>
+              {editError && <p className="text-xs text-red-600">{editError}</p>}
+              <div className="flex gap-3 pt-1">
+                <button type="submit" disabled={editSaving} className="btn-primary flex-1">
+                  {editSaving ? 'Saving…' : 'Save'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setEditingUser(null)}
+                  className="btn-secondary flex-1"
+                >
+                  Cancel
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
       {error && (
         <div className="p-3 rounded-lg bg-red-50 border border-red-200 text-sm text-red-700">{error}</div>
       )}
@@ -236,6 +310,11 @@ export default function AdminPage() {
                     {/* Sticky Actions */}
                     <td className="sticky right-0 bg-white border-l border-gray-100 px-4 py-3">
                       <div className="flex gap-3">
+                        <Tooltip text="Edit name" position="top">
+                          <button onClick={() => openEdit(user)} className="text-xs text-gray-500 hover:underline whitespace-nowrap">
+                            Edit
+                          </button>
+                        </Tooltip>
                         <Tooltip text={user.role === 'Admin' ? 'Remove admin privileges' : 'Grant admin access to this user'} position="top">
                           <button onClick={() => handleRoleToggle(user)} className="text-xs text-primary-600 hover:underline whitespace-nowrap">
                             {user.role === 'Admin' ? 'Remove Admin' : 'Make Admin'}
