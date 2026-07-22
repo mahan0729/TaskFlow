@@ -14,6 +14,8 @@
 #   STRIPE_WEBHOOK_SECRET   — Stripe webhook signing secret (whsec_xxx)
 #   STRIPE_PRO_PRICE_ID     — Stripe price ID for the Pro plan (price_xxx)
 #   SQL_CONNECTION_STRING   — Azure SQL connection string
+#   SENDGRID_API_KEY        — SendGrid API key (SG.xxx) for transactional email
+#   SENDGRID_FROM_EMAIL     — verified sender address in your SendGrid account
 # ─────────────────────────────────────────────────────────────────────────────
 
 # Trigger on every push to main
@@ -179,6 +181,8 @@ stages:
                         {"name": "Stripe__SecretKey", "value": "$(STRIPE_SECRET_KEY)", "slotSetting": false},
                         {"name": "Stripe__WebhookSecret", "value": "$(STRIPE_WEBHOOK_SECRET)", "slotSetting": false},
                         {"name": "Stripe__ProPriceId", "value": "$(STRIPE_PRO_PRICE_ID)", "slotSetting": false},
+                        {"name": "SendGrid__ApiKey", "value": "$(SENDGRID_API_KEY)", "slotSetting": false},
+                        {"name": "SendGrid__FromEmail", "value": "$(SENDGRID_FROM_EMAIL)", "slotSetting": false},
                         {"name": "AllowedOrigins__0", "value": "https://$(WEB_APP_SERVICE_NAME).azurewebsites.net", "slotSetting": false}
                       ]
 
