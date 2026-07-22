@@ -26,7 +26,11 @@ public class TaskItem : BaseEntity
     /// <summary>Optional due date (UTC).</summary>
     public DateTime? DueDate { get; set; }
 
+    /// <summary>FK to the user this task is assigned to. Null = unassigned.</summary>
+    public int? AssignedToUserId { get; set; }
+
     // Navigation properties
     public Project Project { get; set; } = null!;
     public User User { get; set; } = null!;
+    public User? AssignedTo { get; set; }
 }

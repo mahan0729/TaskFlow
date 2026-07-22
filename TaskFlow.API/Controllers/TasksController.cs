@@ -33,6 +33,7 @@ public class TasksController(AppDbContext db) : ControllerBase
     {
         var query = db.Tasks
             .Include(t => t.Project)
+            .Include(t => t.AssignedTo)
             .Where(t => t.UserId == CurrentUserId);
 
         // Apply optional filters
@@ -64,6 +65,7 @@ public class TasksController(AppDbContext db) : ControllerBase
     {
         var task = await db.Tasks
             .Include(t => t.Project)
+            .Include(t => t.AssignedTo)
             .FirstOrDefaultAsync(t => t.Id == id && t.UserId == CurrentUserId);
 
         return task is null ? NotFound() : Ok(MapToResponse(task));
@@ -171,8 +173,42 @@ public class TasksController(AppDbContext db) : ControllerBase
         return NoContent();
     }
 
+    /// <summary>
+    /// Assigns the task to the current user, or unassigns if already assigned to them.
+    /// </summary>
+    [HttpPut("{id:int}/assign")]
+    [ProducesResponseType(typeof(TaskResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> Assign([FromRoute] int id)
+    {
+        var task = await db.Tasks
+            .Include(t => t.Project)
+            .Include(t => t.AssignedTo)
+            .FirstOrDefaultAsync(t => t.Id == id && t.UserId == CurrentUserId);
+
+        if (task is null) return NotFound();
+
+        // Toggle: assign to self, or unassign if already assigned to self
+        task.AssignedToUserId = task.AssignedToUserId == CurrentUserId ? null : CurrentUserId;
+        task.UpdatedAt = DateTime.UtcNow;
+        await db.SaveChangesAsync();
+
+        if (task.AssignedToUserId.HasValue)
+            await db.Entry(task).Reference(t => t.AssignedTo).LoadAsync();
+
+        return Ok(MapToResponse(task));
+    }
+
     // Maps the EF entity to the API response record
-    private static TaskResponse MapToResponse(TaskItem t) =>
-        new(t.Id, t.ProjectId, t.Project?.Name ?? "", t.Title, t.Description,
-            t.Priority, t.Status, t.DueDate, t.CreatedAt, t.UpdatedAt);
+    private static TaskResponse MapToResponse(TaskItem t)
+    {
+        var assignedName = t.AssignedTo is null ? null
+            : t.AssignedTo.FirstName is not null
+                ? $"{t.AssignedTo.FirstName} {t.AssignedTo.LastName}".Trim()
+                : t.AssignedTo.Email;
+
+        return new(t.Id, t.ProjectId, t.Project?.Name ?? "", t.Title, t.Description,
+            t.Priority, t.Status, t.DueDate, t.CreatedAt, t.UpdatedAt,
+            t.AssignedToUserId, assignedName);
+    }
 }

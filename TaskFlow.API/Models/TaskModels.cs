@@ -31,7 +31,9 @@ public record TaskResponse(
     string Status,
     DateTime? DueDate,
     DateTime CreatedAt,
-    DateTime UpdatedAt);
+    DateTime UpdatedAt,
+    int? AssignedToUserId,
+    string? AssignedToName);
 
 /// <summary>Query parameters for filtering the task list.</summary>
 public record TaskFilterParams(

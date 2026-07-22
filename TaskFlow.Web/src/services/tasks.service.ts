@@ -42,6 +42,12 @@ export async function updateTask(id: number, payload: {
   return data;
 }
 
+/** Toggles assignment of a task to the current user (assign if unassigned, unassign if already assigned) */
+export async function assignTask(id: number): Promise<Task> {
+  const { data } = await api.put<Task>(`/api/tasks/${id}/assign`);
+  return data;
+}
+
 /** Deletes a task by ID */
 export async function deleteTask(id: number): Promise<void> {
   await api.delete(`/api/tasks/${id}`);

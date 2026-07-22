@@ -5,7 +5,7 @@
  */
 import { useEffect, useState, type FormEvent } from 'react';
 import { Link } from 'react-router-dom';
-import { getTasks, createTask, updateTask, deleteTask } from '../services/tasks.service';
+import { getTasks, createTask, updateTask, deleteTask, assignTask } from '../services/tasks.service';
 import { getProjects } from '../services/projects.service';
 import { useAuth } from '../context/AuthContext';
 import type { Task, Project } from '../types';
@@ -42,9 +42,10 @@ export default function TasksPage() {
   const [error, setError]       = useState('');
 
   // Filter bar state
-  const [filterProject, setFilterProject] = useState<number | ''>('');
-  const [filterStatus,  setFilterStatus]  = useState<Task['status'] | ''>('');
+  const [filterProject, setFilterProject]   = useState<number | ''>('');
+  const [filterStatus,  setFilterStatus]    = useState<Task['status'] | ''>('');
   const [filterPriority, setFilterPriority] = useState<Task['priority'] | ''>('');
+  const [filterAssigned, setFilterAssigned] = useState(false);
 
   // Modal state
   const [showModal, setShowModal]         = useState(false);
@@ -71,11 +72,12 @@ export default function TasksPage() {
     load();
   }, []);
 
-  // Apply client-side filters for instant UI feedback (server also supports query params)
+  // Apply client-side filters for instant UI feedback
   const filtered = tasks.filter(t => {
-    if (filterProject && t.projectId !== filterProject) return false;
-    if (filterStatus  && t.status   !== filterStatus)   return false;
-    if (filterPriority && t.priority !== filterPriority) return false;
+    if (filterProject  && t.projectId !== filterProject)   return false;
+    if (filterStatus   && t.status    !== filterStatus)    return false;
+    if (filterPriority && t.priority  !== filterPriority)  return false;
+    if (filterAssigned && t.assignedToUserId === null)     return false;
     return true;
   });
 
@@ -156,6 +158,15 @@ export default function TasksPage() {
     }
   }
 
+  async function handleAssign(task: Task) {
+    try {
+      const updated = await assignTask(task.id);
+      setTasks(prev => prev.map(t => t.id === updated.id ? updated : t));
+    } catch {
+      setError('Failed to update assignment.');
+    }
+  }
+
   if (loading) return <p className="text-gray-500">Loading tasks…</p>;
 
   return (
@@ -210,11 +221,19 @@ export default function TasksPage() {
           {PRIORITIES.map(p => <option key={p} value={p}>{p}</option>)}
         </select>
 
+        {/* Assigned to me toggle */}
+        <button
+          onClick={() => setFilterAssigned(f => !f)}
+          className={`text-sm px-3 py-2 rounded-xl border transition-colors ${filterAssigned ? 'bg-primary-600 text-white border-primary-600' : 'bg-white text-gray-600 border-gray-200 hover:border-primary-400'}`}
+        >
+          Assigned to me
+        </button>
+
         {/* Clear filters */}
-        {(filterProject || filterStatus || filterPriority) && (
+        {(filterProject || filterStatus || filterPriority || filterAssigned) && (
           <button
             className="text-sm text-gray-400 hover:text-gray-600"
-            onClick={() => { setFilterProject(''); setFilterStatus(''); setFilterPriority(''); }}
+            onClick={() => { setFilterProject(''); setFilterStatus(''); setFilterPriority(''); setFilterAssigned(false); }}
           >
             Clear filters
           </button>
@@ -263,8 +282,25 @@ export default function TasksPage() {
                     <p className="mt-1 text-xs text-gray-400 line-clamp-2">{task.description}</p>
                   )}
 
+                  {/* Assignee row */}
+                  <div className="mt-2 flex items-center justify-between gap-2">
+                    {task.assignedToName ? (
+                      <span className="text-xs text-primary-600 font-medium truncate">
+                        👤 {task.assignedToName}
+                      </span>
+                    ) : (
+                      <span className="text-xs text-gray-300">Unassigned</span>
+                    )}
+                    <button
+                      onClick={() => handleAssign(task)}
+                      className={`text-xs whitespace-nowrap ${task.assignedToUserId ? 'text-gray-400 hover:text-red-500' : 'text-primary-500 hover:text-primary-700'}`}
+                    >
+                      {task.assignedToUserId ? 'Unassign' : 'Assign to me'}
+                    </button>
+                  </div>
+
                   {/* Footer: project name + priority badge + due date */}
-                  <div className="mt-3 flex items-center justify-between gap-2 flex-wrap">
+                  <div className="mt-2 flex items-center justify-between gap-2 flex-wrap">
                     <span className="text-xs text-gray-400 truncate">{task.projectName}</span>
                     <div className="flex items-center gap-2">
                       {task.dueDate && (

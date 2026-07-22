@@ -44,9 +44,11 @@ export interface Task {
   description: string | null;
   priority: 'Low' | 'Medium' | 'High';
   status: 'Todo' | 'InProgress' | 'Done';
-  dueDate: string | null; // ISO 8601 UTC string, null if no due date
+  dueDate: string | null;
   createdAt: string;
   updatedAt: string;
+  assignedToUserId: number | null;
+  assignedToName: string | null;
 }
 
 /** Query parameters for filtering the task list */
