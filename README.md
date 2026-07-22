@@ -131,5 +131,5 @@ Secrets (connection string, JWT secret, Stripe keys, SendGrid API key) are store
 
 Built by **Matt Mahan** — Software Architect with 15+ years of experience in .NET, React, and Azure.
 
-- LinkedIn: https://www.linkedin.com/in/mattmahan
+- LinkedIn: https://www.linkedin.com/in/matt-mahan-usmc-veteran-611b646/
 - Email: mahanster@gmail.com
