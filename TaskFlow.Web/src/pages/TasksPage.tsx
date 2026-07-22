@@ -10,8 +10,32 @@ import { getProjects } from '../services/projects.service';
 import { useAuth } from '../context/AuthContext';
 import type { Task, Project } from '../types';
 
-const STATUSES: Task['status'][] = ['Todo', 'InProgress', 'Done'];
+const STATUSES: Task['status'][] = ['Backlog', 'Grooming', 'Ready', 'Dev', 'QA', 'Demo', 'UAT', 'Production'];
 const PRIORITIES: Task['priority'][] = ['Low', 'Medium', 'High'];
+
+/** Display label for each status column */
+const STATUS_LABEL: Record<Task['status'], string> = {
+  Backlog:    'Backlog',
+  Grooming:   'Grooming',
+  Ready:      'Ready',
+  Dev:        'Dev',
+  QA:         'QA',
+  Demo:       'Demo',
+  UAT:        'UAT',
+  Production: 'Production',
+};
+
+/** Header accent color per column */
+const STATUS_COLOR: Record<Task['status'], string> = {
+  Backlog:    'bg-gray-200 text-gray-700',
+  Grooming:   'bg-purple-100 text-purple-700',
+  Ready:      'bg-blue-100 text-blue-700',
+  Dev:        'bg-indigo-100 text-indigo-700',
+  QA:         'bg-orange-100 text-orange-700',
+  Demo:       'bg-yellow-100 text-yellow-700',
+  UAT:        'bg-cyan-100 text-cyan-700',
+  Production: 'bg-green-100 text-green-700',
+};
 
 /** Tailwind classes for priority badges */
 const PRIORITY_BADGE: Record<Task['priority'], string> = {
@@ -26,7 +50,7 @@ const EMPTY_FORM = {
   title: '',
   description: '',
   priority: 'Medium' as Task['priority'],
-  status: 'Todo' as Task['status'],
+  status: 'Backlog' as Task['status'],
   dueDate: '',
 };
 
@@ -208,7 +232,7 @@ export default function TasksPage() {
           onChange={e => setFilterStatus(e.target.value as Task['status'] | '')}
         >
           <option value="">All Statuses</option>
-          {STATUSES.map(s => <option key={s} value={s}>{s === 'InProgress' ? 'In Progress' : s}</option>)}
+          {STATUSES.map(s => <option key={s} value={s}>{STATUS_LABEL[s]}</option>)}
         </select>
 
         {/* Priority filter */}
@@ -240,88 +264,90 @@ export default function TasksPage() {
         )}
       </div>
 
-      {/* ── Kanban columns ─────────────────────────────────────────── */}
-      <div className="grid sm:grid-cols-3 gap-6">
-        {STATUSES.map(status => (
-          <div key={status}>
-            {/* Column header */}
-            <div className="flex items-center gap-2 mb-3">
-              <h2 className="text-sm font-semibold text-gray-700">
-                {status === 'InProgress' ? 'In Progress' : status}
-              </h2>
-              <span className="badge bg-gray-100 text-gray-600">
-                {tasksByStatus(status).length}
-              </span>
-            </div>
+      {/* ── Kanban board (horizontal scroll) ──────────────────────── */}
+      <div className="overflow-x-auto pb-4">
+        <div className="flex gap-4" style={{ minWidth: 'max-content' }}>
+          {STATUSES.map(status => (
+            <div key={status} className="w-60 flex-none">
+              {/* Column header */}
+              <div className={`flex items-center gap-2 mb-3 px-3 py-2 rounded-lg ${STATUS_COLOR[status]}`}>
+                <h2 className="text-xs font-semibold uppercase tracking-wide">
+                  {STATUS_LABEL[status]}
+                </h2>
+                <span className="ml-auto text-xs font-bold">
+                  {tasksByStatus(status).length}
+                </span>
+              </div>
 
-            {/* Task cards */}
-            <div className="space-y-3">
-              {tasksByStatus(status).map(task => (
-                <div key={task.id} className="card p-4 hover:shadow-md transition-shadow">
-                  {/* Title + actions */}
-                  <div className="flex items-start justify-between gap-2">
-                    <p className="text-sm font-medium text-gray-900 leading-snug">{task.title}</p>
-                    <div className="flex gap-1 flex-shrink-0">
-                      <button
-                        onClick={() => openModal(task)}
-                        className="text-xs text-gray-400 hover:text-primary-600"
-                      >
-                        Edit
-                      </button>
-                      <button
-                        onClick={() => handleDelete(task)}
-                        className="text-xs text-gray-400 hover:text-red-500"
-                      >
-                        ×
-                      </button>
+              {/* Task cards */}
+              <div className="space-y-3">
+                {tasksByStatus(status).map(task => (
+                  <div key={task.id} className="card p-4 hover:shadow-md transition-shadow">
+                    {/* Title + actions */}
+                    <div className="flex items-start justify-between gap-2">
+                      <p className="text-sm font-medium text-gray-900 leading-snug">{task.title}</p>
+                      <div className="flex gap-1 flex-shrink-0">
+                        <button
+                          onClick={() => openModal(task)}
+                          className="text-xs text-gray-400 hover:text-primary-600"
+                        >
+                          Edit
+                        </button>
+                        <button
+                          onClick={() => handleDelete(task)}
+                          className="text-xs text-gray-400 hover:text-red-500"
+                        >
+                          ×
+                        </button>
+                      </div>
                     </div>
-                  </div>
 
-                  {/* Description preview */}
-                  {task.description && (
-                    <p className="mt-1 text-xs text-gray-400 line-clamp-2">{task.description}</p>
-                  )}
-
-                  {/* Assignee row */}
-                  <div className="mt-2 flex items-center justify-between gap-2">
-                    {task.assignedToName ? (
-                      <span className="text-xs text-primary-600 font-medium truncate">
-                        👤 {task.assignedToName}
-                      </span>
-                    ) : (
-                      <span className="text-xs text-gray-300">Unassigned</span>
+                    {/* Description preview */}
+                    {task.description && (
+                      <p className="mt-1 text-xs text-gray-400 line-clamp-2">{task.description}</p>
                     )}
-                    <button
-                      onClick={() => handleAssign(task)}
-                      className={`text-xs whitespace-nowrap ${task.assignedToUserId ? 'text-gray-400 hover:text-red-500' : 'text-primary-500 hover:text-primary-700'}`}
-                    >
-                      {task.assignedToUserId ? 'Unassign' : 'Assign to me'}
-                    </button>
-                  </div>
 
-                  {/* Footer: project name + priority badge + due date */}
-                  <div className="mt-2 flex items-center justify-between gap-2 flex-wrap">
-                    <span className="text-xs text-gray-400 truncate">{task.projectName}</span>
-                    <div className="flex items-center gap-2">
-                      {task.dueDate && (
-                        <span className="text-xs text-gray-400">
-                          {new Date(task.dueDate).toLocaleDateString()}
+                    {/* Assignee row */}
+                    <div className="mt-2 flex items-center justify-between gap-2">
+                      {task.assignedToName ? (
+                        <span className="text-xs text-primary-600 font-medium truncate">
+                          👤 {task.assignedToName}
                         </span>
+                      ) : (
+                        <span className="text-xs text-gray-300">Unassigned</span>
                       )}
-                      <span className={`badge ${PRIORITY_BADGE[task.priority]}`}>
-                        {task.priority}
-                      </span>
+                      <button
+                        onClick={() => handleAssign(task)}
+                        className={`text-xs whitespace-nowrap ${task.assignedToUserId ? 'text-gray-400 hover:text-red-500' : 'text-primary-500 hover:text-primary-700'}`}
+                      >
+                        {task.assignedToUserId ? 'Unassign' : 'Assign to me'}
+                      </button>
+                    </div>
+
+                    {/* Footer: project name + priority badge + due date */}
+                    <div className="mt-2 flex items-center justify-between gap-2 flex-wrap">
+                      <span className="text-xs text-gray-400 truncate">{task.projectName}</span>
+                      <div className="flex items-center gap-2">
+                        {task.dueDate && (
+                          <span className="text-xs text-gray-400">
+                            {new Date(task.dueDate).toLocaleDateString()}
+                          </span>
+                        )}
+                        <span className={`badge ${PRIORITY_BADGE[task.priority]}`}>
+                          {task.priority}
+                        </span>
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                ))}
 
-              {tasksByStatus(status).length === 0 && (
-                <p className="text-xs text-gray-300 text-center py-4">Empty</p>
-              )}
+                {tasksByStatus(status).length === 0 && (
+                  <p className="text-xs text-gray-300 text-center py-4">Empty</p>
+                )}
+              </div>
             </div>
-          </div>
-        ))}
+          ))}
+        </div>
       </div>
 
       {/* ── Create / Edit modal ───────────────────────────────────── */}
@@ -409,7 +435,7 @@ export default function TasksPage() {
                         onChange={e => setForm(f => ({ ...f, status: e.target.value as Task['status'] }))}
                       >
                         {STATUSES.map(s => (
-                          <option key={s} value={s}>{s === 'InProgress' ? 'In Progress' : s}</option>
+                          <option key={s} value={s}>{STATUS_LABEL[s]}</option>
                         ))}
                       </select>
                     </div>

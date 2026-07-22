@@ -7,8 +7,8 @@ public record CreateTaskRequest(
     string? Description,
     /// <summary>Allowed values: "Low", "Medium", "High"</summary>
     string Priority = "Medium",
-    /// <summary>Allowed values: "Todo", "InProgress", "Done"</summary>
-    string Status = "Todo",
+    /// <summary>Allowed values: "Backlog", "Grooming", "Ready", "Dev", "QA", "Demo", "UAT", "Production"</summary>
+    string Status = "Backlog",
     DateTime? DueDate = null);
 
 /// <summary>Request body for updating an existing task.</summary>

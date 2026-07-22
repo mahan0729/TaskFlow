@@ -43,7 +43,7 @@ export interface Task {
   title: string;
   description: string | null;
   priority: 'Low' | 'Medium' | 'High';
-  status: 'Todo' | 'InProgress' | 'Done';
+  status: 'Backlog' | 'Grooming' | 'Ready' | 'Dev' | 'QA' | 'Demo' | 'UAT' | 'Production';
   dueDate: string | null;
   createdAt: string;
   updatedAt: string;
