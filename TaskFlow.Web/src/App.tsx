@@ -13,6 +13,7 @@ import TasksPage          from './pages/TasksPage';
 import BillingPage        from './pages/BillingPage';
 import ProfilePage        from './pages/ProfilePage';
 import AdminPage          from './pages/AdminPage';
+import HelpPage           from './pages/HelpPage';
 
 export default function App() {
   return (
@@ -34,6 +35,7 @@ export default function App() {
               <Route path="/tasks"     element={<TasksPage />} />
               <Route path="/billing"   element={<BillingPage />} />
               <Route path="/profile"   element={<ProfilePage />} />
+              <Route path="/help"      element={<HelpPage />} />
             </Route>
           </Route>
 
