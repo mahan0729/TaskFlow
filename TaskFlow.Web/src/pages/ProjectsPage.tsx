@@ -4,6 +4,7 @@
  */
 import { useEffect, useState, type FormEvent } from 'react';
 import { getProjects, createProject, updateProject, deleteProject } from '../services/projects.service';
+import { Tooltip } from '../components/Tooltip';
 import type { Project } from '../types';
 
 /** Preset color swatches the user can pick for a project */
@@ -136,18 +137,22 @@ export default function ProjectsPage() {
 
                 {/* Actions */}
                 <div className="flex gap-2 ml-2">
-                  <button
-                    onClick={() => openModal(project)}
-                    className="text-xs text-gray-400 hover:text-primary-600 transition-colors"
-                  >
-                    Edit
-                  </button>
-                  <button
-                    onClick={() => handleDelete(project)}
-                    className="text-xs text-gray-400 hover:text-red-600 transition-colors"
-                  >
-                    Delete
-                  </button>
+                  <Tooltip text="Edit project name, description, or color" position="top">
+                    <button
+                      onClick={() => openModal(project)}
+                      className="text-xs text-gray-400 hover:text-primary-600 transition-colors"
+                    >
+                      Edit
+                    </button>
+                  </Tooltip>
+                  <Tooltip text="Permanently delete this project and all its tasks" position="top">
+                    <button
+                      onClick={() => handleDelete(project)}
+                      className="text-xs text-gray-400 hover:text-red-600 transition-colors"
+                    >
+                      Delete
+                    </button>
+                  </Tooltip>
                 </div>
               </div>
 

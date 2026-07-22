@@ -16,9 +16,14 @@ const PRIORITY_DOT: Record<Task['priority'], string> = {
 };
 
 const STATUS_BADGE: Record<Task['status'], string> = {
-  Todo:       'bg-gray-100 text-gray-600',
-  InProgress: 'bg-blue-100 text-blue-700',
-  Done:       'bg-emerald-100 text-emerald-700',
+  Backlog:    'bg-gray-100 text-gray-600',
+  Grooming:   'bg-purple-100 text-purple-700',
+  Ready:      'bg-blue-100 text-blue-700',
+  Dev:        'bg-indigo-100 text-indigo-700',
+  QA:         'bg-orange-100 text-orange-700',
+  Demo:       'bg-yellow-100 text-yellow-700',
+  UAT:        'bg-cyan-100 text-cyan-700',
+  Production: 'bg-emerald-100 text-emerald-700',
 };
 
 export default function DashboardPage() {
@@ -43,8 +48,8 @@ export default function DashboardPage() {
     load();
   }, []);
 
-  const doneTasks       = tasks.filter(t => t.status === 'Done').length;
-  const inProgressTasks = tasks.filter(t => t.status === 'InProgress').length;
+  const doneTasks       = tasks.filter(t => t.status === 'Production').length;
+  const inProgressTasks = tasks.filter(t => t.status === 'Dev' || t.status === 'QA' || t.status === 'UAT').length;
 
   const recentTasks = [...tasks]
     .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
@@ -74,10 +79,10 @@ export default function DashboardPage() {
         <Tooltip text="All tasks across every project" position="bottom">
           <StatCard label="Total Tasks" value={tasks.length}     accent="from-violet-500 to-violet-600" />
         </Tooltip>
-        <Tooltip text="Tasks currently being worked on" position="bottom">
+        <Tooltip text="Tasks in Dev, QA, or UAT" position="bottom">
           <StatCard label="In Progress" value={inProgressTasks}  accent="from-amber-500 to-orange-500" />
         </Tooltip>
-        <Tooltip text="Tasks marked as Done" position="bottom">
+        <Tooltip text="Tasks deployed to Production" position="bottom">
           <StatCard label="Completed"   value={doneTasks}        accent="from-emerald-500 to-teal-500" />
         </Tooltip>
       </div>
@@ -123,9 +128,9 @@ export default function DashboardPage() {
                       <p className="text-sm font-semibold text-gray-900 truncate">{task.title}</p>
                       <p className="text-xs text-gray-400 mt-0.5">{task.projectName}</p>
                     </div>
-                    <Tooltip text={task.status === 'InProgress' ? 'Currently in progress' : task.status === 'Done' ? 'Completed' : 'Not started yet'} position="left">
+                    <Tooltip text={task.status} position="left">
                       <span className={`badge ${STATUS_BADGE[task.status]}`}>
-                        {task.status === 'InProgress' ? 'In Progress' : task.status}
+                        {task.status}
                       </span>
                     </Tooltip>
                   </li>

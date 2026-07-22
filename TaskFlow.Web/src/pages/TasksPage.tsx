@@ -1,6 +1,6 @@
 /**
  * TasksPage — filterable task list with create/edit/delete.
- * Tasks are displayed as cards grouped by status column (Todo / In Progress / Done).
+ * Tasks are displayed as cards in a horizontally-scrollable 8-column Kanban board.
  * Free plan users see a paywall banner when they hit the 10-task limit.
  */
 import { useEffect, useState, type FormEvent } from 'react';
@@ -8,6 +8,7 @@ import { Link } from 'react-router-dom';
 import { getTasks, createTask, updateTask, deleteTask, assignTask } from '../services/tasks.service';
 import { getProjects } from '../services/projects.service';
 import { useAuth } from '../context/AuthContext';
+import { Tooltip } from '../components/Tooltip';
 import type { Task, Project } from '../types';
 
 const STATUSES: Task['status'][] = ['Backlog', 'Grooming', 'Ready', 'Dev', 'QA', 'Demo', 'UAT', 'Production'];
@@ -316,12 +317,14 @@ export default function TasksPage() {
                       ) : (
                         <span className="text-xs text-gray-300">Unassigned</span>
                       )}
-                      <button
-                        onClick={() => handleAssign(task)}
-                        className={`text-xs whitespace-nowrap ${task.assignedToUserId ? 'text-gray-400 hover:text-red-500' : 'text-primary-500 hover:text-primary-700'}`}
-                      >
-                        {task.assignedToUserId ? 'Unassign' : 'Assign to me'}
-                      </button>
+                      <Tooltip text={task.assignedToUserId ? 'Remove your assignment from this task' : 'Assign this task to yourself'} position="top">
+                        <button
+                          onClick={() => handleAssign(task)}
+                          className={`text-xs whitespace-nowrap ${task.assignedToUserId ? 'text-gray-400 hover:text-red-500' : 'text-primary-500 hover:text-primary-700'}`}
+                        >
+                          {task.assignedToUserId ? 'Unassign' : 'Assign to me'}
+                        </button>
+                      </Tooltip>
                     </div>
 
                     {/* Footer: project name + priority badge + due date */}
@@ -333,9 +336,11 @@ export default function TasksPage() {
                             {new Date(task.dueDate).toLocaleDateString()}
                           </span>
                         )}
-                        <span className={`badge ${PRIORITY_BADGE[task.priority]}`}>
-                          {task.priority}
-                        </span>
+                        <Tooltip text={task.priority === 'High' ? 'High priority — needs immediate attention' : task.priority === 'Medium' ? 'Medium priority' : 'Low priority — tackle when time allows'} position="top">
+                          <span className={`badge ${PRIORITY_BADGE[task.priority]}`}>
+                            {task.priority}
+                          </span>
+                        </Tooltip>
                       </div>
                     </div>
                   </div>

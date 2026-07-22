@@ -5,6 +5,7 @@
 import { useEffect, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { getSubscriptionStatus, createCheckoutSession } from '../services/subscription.service';
+import { Tooltip } from '../components/Tooltip';
 import type { SubscriptionStatus } from '../types';
 
 export default function BillingPage() {
@@ -113,13 +114,15 @@ export default function BillingPage() {
 
         {/* Upgrade / manage button */}
         {!isPro ? (
-          <button
-            onClick={handleUpgrade}
-            disabled={upgrading}
-            className="btn-primary mt-6 w-full sm:w-auto"
-          >
-            {upgrading ? 'Redirecting to Stripe…' : 'Upgrade to Pro — $9/mo'}
-          </button>
+          <Tooltip text="You'll be securely redirected to Stripe to complete your upgrade" position="top">
+            <button
+              onClick={handleUpgrade}
+              disabled={upgrading}
+              className="btn-primary mt-6 w-full sm:w-auto"
+            >
+              {upgrading ? 'Redirecting to Stripe…' : 'Upgrade to Pro — $9/mo'}
+            </button>
+          </Tooltip>
         ) : (
           <p className="mt-6 text-sm text-gray-500">
             To manage or cancel your subscription, contact support or use the Stripe customer portal.
@@ -129,9 +132,11 @@ export default function BillingPage() {
 
       {/* Stripe customer ID for reference (useful for support) */}
       {status?.stripeCustomerId && (
-        <p className="text-xs text-gray-400">
-          Stripe customer: {status.stripeCustomerId}
-        </p>
+        <Tooltip text="Reference this ID when contacting support about billing" position="top">
+          <p className="text-xs text-gray-400 w-fit">
+            Stripe customer: {status.stripeCustomerId}
+          </p>
+        </Tooltip>
       )}
     </div>
   );
