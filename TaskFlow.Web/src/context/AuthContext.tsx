@@ -19,7 +19,7 @@ interface AuthContextValue {
   changePassword: (currentPassword: string, newPassword: string) => Promise<void>;
 }
 
-const AuthContext = createContext<AuthContextValue | null>(null);
+export const AuthContext = createContext<AuthContextValue | null>(null);
 
 function readStoredAuth(): StoredAuth | null {
   const accessToken  = localStorage.getItem('accessToken');
