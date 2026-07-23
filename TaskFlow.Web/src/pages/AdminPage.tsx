@@ -13,14 +13,15 @@ import { PasswordInput } from '../components/PasswordInput';
 import { Tooltip } from '../components/Tooltip';
 import type { AdminStats, AdminUser, AdminProject } from '../types';
 
-type AdminTab = 'overview' | 'users' | 'projects' | 'downloads' | 'billing';
+type AdminTab = 'overview' | 'users' | 'projects' | 'downloads' | 'billing' | 'stripe';
 
 const TABS: { id: AdminTab; label: string }[] = [
-  { id: 'overview',   label: 'Overview'   },
-  { id: 'users',      label: 'Users'      },
-  { id: 'projects',   label: 'Projects'   },
+  { id: 'overview',   label: 'Overview'        },
+  { id: 'users',      label: 'Users'           },
+  { id: 'projects',   label: 'Projects'        },
   { id: 'downloads',  label: 'Download Emails' },
-  { id: 'billing',    label: 'Billing'    },
+  { id: 'billing',    label: 'Billing'         },
+  { id: 'stripe',     label: 'Stripe'          },
 ];
 
 const EMPTY_FORM = { email: '', password: '', role: 'User' as 'User' | 'Admin', sendDownload: false };
@@ -454,6 +455,98 @@ export default function AdminPage() {
               </tbody>
             </table>
           </div>
+        </div>
+      )}
+
+      {/* ── Stripe tab ───────────────────────────────────────────────── */}
+      {tab === 'stripe' && (
+        <div className="space-y-6">
+
+          {/* Plans */}
+          <div>
+            <h3 className="text-sm font-semibold text-gray-900 mb-3">Plans</h3>
+            <div className="grid sm:grid-cols-2 gap-4">
+
+              {/* Free */}
+              <div className="card space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="badge bg-gray-100 text-gray-700 text-sm">Free</span>
+                  <span className="text-lg font-bold text-gray-900">$0</span>
+                </div>
+                <ul className="text-xs text-gray-500 space-y-1">
+                  <li>• Up to 10 tasks</li>
+                  <li>• Up to 5 projects</li>
+                  <li>• No credit card required</li>
+                </ul>
+                <div>
+                  <p className="text-xs font-medium text-gray-500 mb-1">Stripe Price ID</p>
+                  <p className="text-xs font-mono bg-gray-50 border border-gray-200 rounded px-2 py-1 text-gray-400 select-all">—</p>
+                </div>
+              </div>
+
+              {/* Pro */}
+              <div className="card space-y-3 border-primary-200">
+                <div className="flex items-center justify-between">
+                  <span className="badge bg-primary-100 text-primary-700 text-sm">Pro</span>
+                  <span className="text-lg font-bold text-gray-900">$9.99 <span className="text-sm font-normal text-gray-400">/ mo</span></span>
+                </div>
+                <ul className="text-xs text-gray-500 space-y-1">
+                  <li>• Unlimited tasks</li>
+                  <li>• Unlimited projects</li>
+                  <li>• Priority support</li>
+                </ul>
+                <div>
+                  <p className="text-xs font-medium text-gray-500 mb-1">Stripe Price ID</p>
+                  <Tooltip text="Set via STRIPE_PRO_PRICE_ID pipeline variable" position="top">
+                    <p className="text-xs font-mono bg-gray-50 border border-gray-200 rounded px-2 py-1 text-gray-700 select-all truncate">
+                      price_1TvNFfGSr9QiRHN19dXpQvBj
+                    </p>
+                  </Tooltip>
+                </div>
+              </div>
+
+            </div>
+          </div>
+
+          {/* Webhook */}
+          <div className="card space-y-3">
+            <h3 className="text-sm font-semibold text-gray-900">Webhook Endpoint</h3>
+            <p className="text-xs text-gray-500">
+              Register this URL in the Stripe Dashboard under <strong>Developers → Webhooks</strong>.
+              Events: <code className="bg-gray-100 px-1 rounded">checkout.session.completed</code>, <code className="bg-gray-100 px-1 rounded">customer.subscription.deleted</code>
+            </p>
+            <div>
+              <p className="text-xs font-mono bg-gray-50 border border-gray-200 rounded px-3 py-2 text-gray-700 select-all break-all">
+                https://taskflow-api.azurewebsites.net/api/stripe/webhook
+              </p>
+            </div>
+            <p className="text-xs text-gray-400">
+              Webhook signing secret is set via the <code className="bg-gray-100 px-1 rounded">STRIPE_WEBHOOK_SECRET</code> pipeline variable.
+            </p>
+          </div>
+
+          {/* Config note + Dashboard link */}
+          <div className="card bg-amber-50 border-amber-100 flex items-start gap-3">
+            <svg className="w-4 h-4 text-amber-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <div className="space-y-1">
+              <p className="text-xs font-semibold text-amber-800">Configuration is managed via pipeline variables</p>
+              <p className="text-xs text-amber-700">
+                To change pricing, update the Stripe product/price in the Stripe Dashboard, then update
+                <code className="bg-amber-100 px-1 rounded mx-0.5">STRIPE_PRO_PRICE_ID</code> in Azure DevOps → Library.
+              </p>
+              <a
+                href="https://dashboard.stripe.com"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-block text-xs font-medium text-amber-700 underline mt-1"
+              >
+                Open Stripe Dashboard →
+              </a>
+            </div>
+          </div>
+
         </div>
       )}
 
