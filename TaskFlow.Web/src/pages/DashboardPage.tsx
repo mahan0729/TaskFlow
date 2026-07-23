@@ -16,14 +16,9 @@ const PRIORITY_DOT: Record<Task['priority'], string> = {
 };
 
 const STATUS_BADGE: Record<Task['status'], string> = {
-  Backlog:    'bg-gray-100 text-gray-600',
-  Grooming:   'bg-purple-100 text-purple-700',
-  Ready:      'bg-blue-100 text-blue-700',
-  Dev:        'bg-indigo-100 text-indigo-700',
-  QA:         'bg-orange-100 text-orange-700',
-  Demo:       'bg-yellow-100 text-yellow-700',
-  UAT:        'bg-cyan-100 text-cyan-700',
-  Production: 'bg-emerald-100 text-emerald-700',
+  Todo:       'bg-gray-100 text-gray-600',
+  InProgress: 'bg-blue-100 text-blue-700',
+  Done:       'bg-emerald-100 text-emerald-700',
 };
 
 export default function DashboardPage() {
@@ -48,8 +43,8 @@ export default function DashboardPage() {
     load();
   }, []);
 
-  const doneTasks       = tasks.filter(t => t.status === 'Production').length;
-  const inProgressTasks = tasks.filter(t => t.status === 'Dev' || t.status === 'QA' || t.status === 'UAT').length;
+  const doneTasks       = tasks.filter(t => t.status === 'Done').length;
+  const inProgressTasks = tasks.filter(t => t.status === 'InProgress').length;
 
   const recentTasks = [...tasks]
     .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())

@@ -38,10 +38,9 @@ function UserGuide() {
 
       <Section title="What is TaskFlow?">
         <p>
-          TaskFlow is a project and task management tool built around a professional software
-          delivery workflow. You organize work into <strong>Projects</strong>, break each project
-          into <strong>Tasks</strong>, and move those tasks through an 8-stage Kanban board as
-          work progresses from idea to production.
+          TaskFlow is a project and task management tool. You organize work into <strong>Projects</strong>,
+          break each project into <strong>Tasks</strong>, and move those tasks through a simple
+          3-column Kanban board as work progresses from idea to done.
         </p>
       </Section>
 
@@ -49,21 +48,16 @@ function UserGuide() {
         <ol className="list-decimal list-inside space-y-2 text-gray-700">
           <li>Go to <strong>Projects</strong> and click <strong>+ New Project</strong> to create your first project.</li>
           <li>Go to <strong>Tasks</strong> and click <strong>+ New Task</strong>, selecting the project you just created.</li>
-          <li>Your task appears in the <strong>Backlog</strong> column. Move it through the stages as work progresses.</li>
+          <li>Your task appears in the <strong>To Do</strong> column. Move it through the stages as work progresses.</li>
         </ol>
       </Section>
 
       <Section title="The Kanban Workflow">
-        <p className="mb-3">Tasks move left to right across 8 columns. Each column represents a stage in the delivery lifecycle:</p>
+        <p className="mb-3">Tasks move left to right across 3 columns:</p>
         <div className="space-y-2">
-          <Stage color="bg-gray-200 text-gray-700"       name="Backlog"     desc="New ideas, features, bugs, and requests that haven't been refined yet." />
-          <Stage color="bg-purple-100 text-purple-700"   name="Grooming"    desc="Requirements are being discussed, estimated, and refined. Acceptance criteria are defined." />
-          <Stage color="bg-blue-100 text-blue-700"       name="Ready"       desc="Grooming is complete. The work is approved and ready for the next available developer." />
-          <Stage color="bg-indigo-100 text-indigo-700"   name="Dev"         desc="Development is actively in progress." />
-          <Stage color="bg-orange-100 text-orange-700"   name="QA"          desc="Testing by QA and defect resolution." />
-          <Stage color="bg-yellow-100 text-yellow-700"   name="Demo"        desc="Demonstration to stakeholders or Product Owner for review and sign-off." />
-          <Stage color="bg-cyan-100 text-cyan-700"       name="UAT"         desc="Business users perform User Acceptance Testing." />
-          <Stage color="bg-green-100 text-green-700"     name="Production"  desc="Successfully deployed to production." />
+          <Stage color="bg-gray-200 text-gray-700"     name="To Do"       desc="Work that is queued and ready to be started." />
+          <Stage color="bg-blue-100 text-blue-700"     name="In Progress"  desc="Work that is actively being worked on right now." />
+          <Stage color="bg-green-100 text-green-700"   name="Done"         desc="Completed work. Nothing left to do." />
         </div>
       </Section>
 

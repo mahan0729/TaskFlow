@@ -1,6 +1,6 @@
 /**
  * TasksPage — filterable task list with create/edit/delete.
- * Tasks are displayed as cards in a horizontally-scrollable 8-column Kanban board.
+ * Tasks are displayed as cards in a 3-column Kanban board (Todo / In Progress / Done).
  * Free plan users see a paywall banner when they hit the 10-task limit.
  */
 import { useEffect, useState, type FormEvent } from 'react';
@@ -11,31 +11,21 @@ import { useAuth } from '../context/AuthContext';
 import { Tooltip } from '../components/Tooltip';
 import type { Task, Project } from '../types';
 
-const STATUSES: Task['status'][] = ['Backlog', 'Grooming', 'Ready', 'Dev', 'QA', 'Demo', 'UAT', 'Production'];
+const STATUSES: Task['status'][] = ['Todo', 'InProgress', 'Done'];
 const PRIORITIES: Task['priority'][] = ['Low', 'Medium', 'High'];
 
 /** Display label for each status column */
 const STATUS_LABEL: Record<Task['status'], string> = {
-  Backlog:    'Backlog',
-  Grooming:   'Grooming',
-  Ready:      'Ready',
-  Dev:        'Dev',
-  QA:         'QA',
-  Demo:       'Demo',
-  UAT:        'UAT',
-  Production: 'Production',
+  Todo:       'To Do',
+  InProgress: 'In Progress',
+  Done:       'Done',
 };
 
 /** Header accent color per column */
 const STATUS_COLOR: Record<Task['status'], string> = {
-  Backlog:    'bg-gray-200 text-gray-700',
-  Grooming:   'bg-purple-100 text-purple-700',
-  Ready:      'bg-blue-100 text-blue-700',
-  Dev:        'bg-indigo-100 text-indigo-700',
-  QA:         'bg-orange-100 text-orange-700',
-  Demo:       'bg-yellow-100 text-yellow-700',
-  UAT:        'bg-cyan-100 text-cyan-700',
-  Production: 'bg-green-100 text-green-700',
+  Todo:       'bg-gray-200 text-gray-700',
+  InProgress: 'bg-blue-100 text-blue-700',
+  Done:       'bg-green-100 text-green-700',
 };
 
 /** Tailwind classes for priority badges */
@@ -51,7 +41,7 @@ const EMPTY_FORM = {
   title: '',
   description: '',
   priority: 'Medium' as Task['priority'],
-  status: 'Backlog' as Task['status'],
+  status: 'Todo' as Task['status'],
   dueDate: '',
 };
 

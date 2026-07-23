@@ -49,7 +49,7 @@ public class AdminControllerTests
         db.Users.AddRange(MakeUser("a@x.com", plan: "Free"), MakeUser("b@x.com", plan: "Pro"));
         var project = new Project { Name = "P1", Color = "#000", User = db.Users.Local.First() };
         db.Projects.Add(project);
-        db.Tasks.Add(new TaskItem { Title = "T1", ProjectId = project.Id, UserId = db.Users.Local.First().Id, Status = "Backlog" });
+        db.Tasks.Add(new TaskItem { Title = "T1", ProjectId = project.Id, UserId = db.Users.Local.First().Id, Status = "Todo" });
         await db.SaveChangesAsync();
 
         var result = await controller.GetStats();

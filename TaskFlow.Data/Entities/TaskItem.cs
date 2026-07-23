@@ -20,8 +20,8 @@ public class TaskItem : BaseEntity
     /// <summary>Priority level: "Low", "Medium", or "High".</summary>
     public string Priority { get; set; } = "Medium";
 
-    /// <summary>Workflow status: "Backlog", "Grooming", "Ready", "Dev", "QA", "Demo", "UAT", or "Production".</summary>
-    public string Status { get; set; } = "Backlog";
+    /// <summary>Workflow status: "Todo", "InProgress", or "Done".</summary>
+    public string Status { get; set; } = "Todo";
 
     /// <summary>Optional due date (UTC).</summary>
     public DateTime? DueDate { get; set; }
