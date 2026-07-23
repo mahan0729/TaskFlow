@@ -6,6 +6,22 @@ A full-stack SaaS task management application built to demonstrate production-gr
 
 ---
 
+## Screenshots
+
+![Dashboard](docs/screenshots/dashboard.png)
+*Dashboard — project and task summary with recent activity*
+
+![Tasks](docs/screenshots/tasks.png)
+*Tasks — 3-column Kanban board (To Do / In Progress / Done)*
+
+![Admin Panel](docs/screenshots/admin.png)
+*Admin Panel — platform-wide stats and user management*
+
+![Download](docs/screenshots/download.png)
+*Download page — Windows installer with installation instructions*
+
+---
+
 ## Tech Stack
 
 | Layer | Technology |
@@ -18,15 +34,15 @@ A full-stack SaaS task management application built to demonstrate production-gr
 | Email | SendGrid transactional email |
 | Hosting | Azure App Services (Linux) — separate API and Web instances |
 | CI/CD | Azure DevOps Pipelines (build → deploy on push to main) |
-| Desktop | Electron 42 wrapper (Windows & Mac) |
+| Desktop | Electron 42 wrapper (Windows) |
+| Testing | xUnit + Moq + EF InMemory (API) · Vitest + React Testing Library (frontend) |
 
 ---
 
 ## Features
 
 ### Core Workflow
-- **8-stage Kanban board** — Backlog → Grooming → Ready → Dev → QA → Demo → UAT → Production
-- Horizontally scrollable board with color-coded columns per stage
+- **3-column Kanban board** — To Do / In Progress / Done
 - Task creation with title, description, priority (Low / Medium / High), status, due date, and project assignment
 - Task self-assignment — take or release ownership of any task
 
@@ -37,26 +53,49 @@ A full-stack SaaS task management application built to demonstrate production-gr
 - Profile page — update name, change password
 
 ### Projects
-- Unlimited projects (Free plan), each with a name, description, and color swatch
+- Unlimited projects per user, each with a name, description, and color swatch
 - Per-project task count displayed on project cards
 
 ### Billing
-- Free plan (10-task limit) and Pro plan ($9/mo, unlimited tasks)
+- Free plan (10-task limit) and Pro plan ($9.99/mo, unlimited tasks)
 - Stripe Checkout integration — secure hosted payment flow
 - Stripe webhook handler for subscription lifecycle events
-- Manual plan override available to admins
+- Manual plan override available to admins (no Stripe required)
 
 ### Admin Panel
-- Platform stats — total users, free/pro split, projects, tasks
+- Five-tab panel: Overview, Users, Projects, Download Emails, Billing, Stripe
+- Platform stats — total users, free/pro split, total projects, total tasks
 - Create, edit, and delete user accounts
-- Toggle Admin role and manually set plan per user
-- Stripe Subscription ID visible per user (tooltip)
+- Toggle Admin role and manually override plan per user
+- All projects across all users with owner info and task counts
+- Send Windows download link email to any email address or existing user
+- Stripe configuration reference — plan cards, webhook endpoint, Stripe Dashboard link
+
+### Desktop App
+- Electron wrapper for Windows — same React frontend in a native window
+- Download page in the web app lets users grab the installer directly
+- Auto-update support (checks Azure Blob Storage on launch)
 
 ### UX Details
 - Portal-based tooltip system (top / bottom / left / right with arrow)
 - Password visibility toggle on all password fields
 - Contextual tooltips throughout — actions, priority badges, plan badges, stat cards
-- Copyright footer, responsive layout, dark sidebar with plan badge
+- Help page with User Guide and Admin Guide tabs
+- v1.0.0 footer with version tooltip
+- Dark sidebar with plan badge, Download link, and Help link
+
+---
+
+## Testing
+
+### Backend — 24 tests (`dotnet test`)
+- **AuthServiceTests** — register, duplicate email guard, login happy/error paths, email verification, expired codes, password reset, change password
+- **AdminControllerTests** — stats counts, create user 201/409, edit name, delete 204/404, role toggle, plan downgrade clears Stripe subscription ID
+
+### Frontend — 14 tests (`npm test`)
+- **admin.service** — verifies correct API endpoints and payloads
+- **DownloadPage** — renders heading, Windows link href, disabled Mac button, install steps, auto-update banner
+- **LoginPage** — fields render, loading/disabled state, error banner, form submit calls login, clearError on input
 
 ---
 
@@ -65,20 +104,24 @@ A full-stack SaaS task management application built to demonstrate production-gr
 ```
 TaskFlow/
 ├── TaskFlow.API/          # .NET 10 Web API
-│   ├── Controllers/       # Auth, Tasks, Projects, Billing, Admin
+│   ├── Controllers/       # Auth, Tasks, Projects, Subscription, Admin
 │   ├── Models/            # Request/response records
-│   └── Services/          # AuthService, StripeService, SendGridEmailService, TokenService
+│   └── Services/          # AuthService, TokenService, SendGridEmailService
 ├── TaskFlow.Data/         # EF Core DbContext, Entities, Migrations
 │   ├── Entities/          # User, Project, TaskItem, RefreshToken
 │   └── Migrations/        # Full migration history with backfill SQL
+├── TaskFlow.Tests/        # xUnit test project
+│   ├── Controllers/       # AdminControllerTests
+│   ├── Helpers/           # DbFactory (in-memory DB + TokenService setup)
+│   └── Services/          # AuthServiceTests
 ├── TaskFlow.Web/          # React 19 + TypeScript frontend
 │   └── src/
 │       ├── components/    # Layout, ProtectedRoute, Tooltip, PasswordInput
 │       ├── context/       # AuthContext (global auth state)
-│       ├── pages/         # Dashboard, Tasks, Projects, Billing, Profile, Admin, Help, Auth flows
+│       ├── pages/         # Dashboard, Tasks, Projects, Billing, Profile, Admin, Help, Download, Auth flows
 │       ├── services/      # Axios-based API service layer
 │       └── types/         # Shared TypeScript interfaces
-└── TaskFlow.Electron/     # Electron desktop wrapper
+└── TaskFlow.Electron/     # Electron desktop wrapper (Windows)
 ```
 
 ---
@@ -108,6 +151,15 @@ npm run dev
 ```
 
 The React app runs on `http://localhost:5173` and proxies API calls to `http://localhost:5028`.
+
+### Running Tests
+```bash
+# Backend
+dotnet test TaskFlow.Tests
+
+# Frontend
+cd TaskFlow.Web && npm test
+```
 
 ### Database
 EF Core migrations run automatically on API startup via `dbContext.Database.Migrate()`.
