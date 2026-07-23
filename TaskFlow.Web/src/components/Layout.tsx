@@ -145,7 +145,9 @@ export default function Layout() {
           <Outlet />
         </div>
         <footer className="text-center py-4 select-none">
-          <p className="text-base text-gray-400 font-semibold">v1.0.0</p>
+          <Tooltip text="Application version" position="top">
+            <p className="text-base text-gray-400 font-semibold inline-block cursor-default">v1.0.0</p>
+          </Tooltip>
           <p className="text-sm text-gray-500 font-medium">&copy; {new Date().getFullYear()} Matt Mahan</p>
         </footer>
       </main>

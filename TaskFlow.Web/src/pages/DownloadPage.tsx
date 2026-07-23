@@ -1,6 +1,7 @@
 /**
  * DownloadPage — lets any authenticated user download the TaskFlow desktop app.
  */
+import { Tooltip } from '../components/Tooltip';
 
 const WINDOWS_URL = 'https://taskflowstorage.blob.core.windows.net/downloads/TaskFlow-Setup.exe';
 
@@ -64,9 +65,11 @@ export default function DownloadPage() {
             </div>
           </div>
 
-          <button disabled className="btn-secondary text-center text-sm cursor-not-allowed">
-            Coming Soon
-          </button>
+          <Tooltip text="macOS version is currently in development — check back soon." position="top">
+            <button disabled className="btn-secondary text-center text-sm cursor-not-allowed w-full">
+              Coming Soon
+            </button>
+          </Tooltip>
 
           <p className="text-xs text-gray-400">
             The macOS desktop app is currently in development and will be available in a future release.
