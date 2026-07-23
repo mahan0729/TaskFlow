@@ -74,6 +74,19 @@ export interface AdminStats {
   totalTasks: number;
 }
 
+/** A project row in the admin projects list */
+export interface AdminProject {
+  id: number;
+  name: string;
+  description: string | null;
+  color: string;
+  ownerEmail: string;
+  ownerFirstName: string | null;
+  ownerLastName: string | null;
+  taskCount: number;
+  createdAt: string;
+}
+
 /** A single user row in the admin user list */
 export interface AdminUser {
   id: number;

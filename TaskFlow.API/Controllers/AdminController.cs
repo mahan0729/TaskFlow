@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using TaskFlow.API.Models;
+using TaskFlow.API.Services;
 using TaskFlow.Data;
 using TaskFlow.Data.Entities;
 
@@ -14,7 +15,7 @@ namespace TaskFlow.API.Controllers;
 [ApiController]
 [Route("api/[controller]")]
 [Authorize(Roles = "Admin")]
-public class AdminController(AppDbContext db) : ControllerBase
+public class AdminController(AppDbContext db, IEmailService email, IConfiguration config) : ControllerBase
 {
     /// <summary>
     /// Returns platform-wide aggregate stats for the admin dashboard.
@@ -57,7 +58,7 @@ public class AdminController(AppDbContext db) : ControllerBase
 
         db.Users.Add(user);
         await db.SaveChangesAsync();
-        return StatusCode(201);
+        return StatusCode(201, new { id = user.Id });
     }
 
     /// <summary>
@@ -147,6 +148,60 @@ public class AdminController(AppDbContext db) : ControllerBase
         user.UpdatedAt = DateTime.UtcNow;
         await db.SaveChangesAsync();
 
+        return NoContent();
+    }
+
+    /// <summary>
+    /// Returns all projects across all users, ordered by most recent first.
+    /// </summary>
+    [HttpGet("projects")]
+    [ProducesResponseType(typeof(IEnumerable<AdminProjectResponse>), StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetProjects()
+    {
+        var projects = await db.Projects
+            .Include(p => p.User)
+            .OrderByDescending(p => p.CreatedAt)
+            .Select(p => new AdminProjectResponse(
+                p.Id,
+                p.Name,
+                p.Description,
+                p.Color,
+                p.User.Email,
+                p.User.FirstName,
+                p.User.LastName,
+                p.Tasks.Count,
+                p.CreatedAt))
+            .ToListAsync();
+
+        return Ok(projects);
+    }
+
+    /// <summary>
+    /// Sends a download email to an existing user by ID.
+    /// </summary>
+    [HttpPost("users/{id:int}/send-download")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> SendDownloadEmail([FromRoute] int id)
+    {
+        var user = await db.Users.FindAsync(id);
+        if (user is null) return NotFound();
+
+        var windowsUrl = config["Downloads:WindowsUrl"] ?? "https://taskflowstorage.blob.core.windows.net/downloads/TaskFlow-Setup.exe";
+        await email.SendDownloadEmailAsync(user.Email, user.FirstName ?? user.Email, windowsUrl);
+        return NoContent();
+    }
+
+    /// <summary>
+    /// Sends a download email to any email address — recipient does not need to be a user.
+    /// </summary>
+    [HttpPost("send-download")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    public async Task<IActionResult> SendDownloadEmailToAddress([FromBody] SendDownloadToEmailRequest request)
+    {
+        var windowsUrl = config["Downloads:WindowsUrl"] ?? "https://taskflowstorage.blob.core.windows.net/downloads/TaskFlow-Setup.exe";
+        var name = string.IsNullOrWhiteSpace(request.Name) ? request.Email : request.Name;
+        await email.SendDownloadEmailAsync(request.Email, name, windowsUrl);
         return NoContent();
     }
 

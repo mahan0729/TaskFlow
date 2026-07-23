@@ -23,6 +23,21 @@ public record CreateUserRequest(
 /// <summary>Request body for an admin to edit a user's name.</summary>
 public record EditUserRequest(string? FirstName, string? LastName);
 
+/// <summary>Request body for sending a download email to any email address.</summary>
+public record SendDownloadToEmailRequest(string Email, string? Name);
+
+/// <summary>Summary of a project shown in the admin projects list.</summary>
+public record AdminProjectResponse(
+    int Id,
+    string Name,
+    string? Description,
+    string Color,
+    string OwnerEmail,
+    string? OwnerFirstName,
+    string? OwnerLastName,
+    int TaskCount,
+    DateTime CreatedAt);
+
 /// <summary>Request body for an admin to change a user's role.</summary>
 public record UpdateUserRoleRequest(
     /// <summary>Allowed values: "User", "Admin"</summary>
