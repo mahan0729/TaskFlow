@@ -98,6 +98,16 @@ function UserGuide() {
         </ul>
       </Section>
 
+      <Section title="Desktop App">
+        <ul className="space-y-2 text-gray-700">
+          <li>Click <strong>Download</strong> in the sidebar to get the TaskFlow desktop app for Windows.</li>
+          <li>Download the installer (.exe), then run it. If Windows SmartScreen appears, click <strong>More info → Run anyway</strong>.</li>
+          <li>Sign in with your existing TaskFlow credentials — your data is the same as the web app.</li>
+          <li>The desktop app checks for updates automatically each time it launches.</li>
+          <li>A macOS version is coming soon.</li>
+        </ul>
+      </Section>
+
     </div>
   );
 }
@@ -109,7 +119,8 @@ function AdminGuide() {
       <Section title="Admin Panel Overview">
         <p>
           The <strong>Admin Panel</strong> is only visible to users with the Admin role.
-          It shows platform-wide statistics and gives you full control over all user accounts.
+          It is organized into five tabs: <strong>Overview</strong>, <strong>Users</strong>,
+          <strong>Projects</strong>, <strong>Download Emails</strong>, and <strong>Billing</strong> and <strong>Stripe</strong>.
         </p>
         <p className="mt-2">
           Access it via the <strong>Admin Panel</strong> link at the bottom of the sidebar navigation.
@@ -162,6 +173,34 @@ function AdminGuide() {
           Click <strong>Delete</strong> next to a user to permanently remove their account and all associated projects and tasks.
           You will be asked to confirm before anything is deleted. <em>This cannot be undone.</em>
         </p>
+      </Section>
+
+      <Section title="Projects Tab">
+        <p>The <strong>Projects</strong> tab shows every project across all users, ordered by most recently created first.</p>
+        <ul className="mt-2 space-y-1 text-gray-700">
+          <li>Each row shows the project name, color, owner name and email, task count, and creation date.</li>
+          <li>Use this tab to get a platform-wide view of activity without logging in as individual users.</li>
+        </ul>
+      </Section>
+
+      <Section title="Download Emails Tab">
+        <p>The <strong>Download Emails</strong> tab lets you send the Windows desktop app download link via email.</p>
+        <ul className="mt-2 space-y-1 text-gray-700">
+          <li><strong>Send to anyone:</strong> Enter any email address and optional name at the top — the recipient does not need a TaskFlow account. Great for sending to a prospect before they sign up.</li>
+          <li><strong>Send to existing users:</strong> The user list below lets you send the download link directly to any registered user with a single click.</li>
+          <li>Both options send the same branded email with the download button and installation instructions.</li>
+        </ul>
+      </Section>
+
+      <Section title="Stripe Tab">
+        <p>The <strong>Stripe</strong> tab is a reference panel for your Stripe configuration.</p>
+        <ul className="mt-2 space-y-1 text-gray-700">
+          <li><strong>Free plan card:</strong> Shows the Free tier features. No Stripe Price ID is required.</li>
+          <li><strong>Pro plan card:</strong> Shows the $9.99/month price, features, and the configured Stripe Price ID. Hover the Price ID to see which pipeline variable controls it.</li>
+          <li><strong>Webhook endpoint:</strong> Shows the URL to register in the Stripe Dashboard under <em>Developers → Webhooks</em>, along with the two required events.</li>
+          <li><strong>Stripe Dashboard link:</strong> Opens the Stripe Dashboard directly to manage products, prices, and subscriptions.</li>
+          <li>Stripe keys and the Price ID are managed via Azure DevOps pipeline variables — not edited from this screen.</li>
+        </ul>
       </Section>
 
     </div>
